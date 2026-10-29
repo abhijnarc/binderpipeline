@@ -1,0 +1,21 @@
+<ROSETTASCRIPTS>
+
+    <SCOREFXNS>
+        <ScoreFunction name="sfxn" weights="ref2015"/>
+    </SCOREFXNS>
+
+    <MOVERS>
+        <InterfaceAnalyzerMover
+            name="analyze"
+            scorefxn="sfxn"
+            pack_separated="true"
+	    interface_sc="true"
+	    tracer="true"
+	    interface="A_B" />
+    </MOVERS>
+
+    <PROTOCOLS>
+        <Add mover="analyze"/>
+    </PROTOCOLS>
+
+</ROSETTASCRIPTS>
