@@ -87,11 +87,10 @@ See [ENVIRONMENT.md](ENVIRONMENT.md) for paths and the complete read-only check 
 
 - PLIP, Open Babel, Prodigy, DockQ and the requested Python packages are available in their Conda environments.
 - The supplied static Rosetta executables and repository wrappers are present. The wrappers refer to static binary names rather than the requested `.default` names.
-- PDBBind and the 10-complex input files are present on this workstation.
 
 ### Not tested yet
 
-- No end-to-end pipeline stage has been run on real data for this supervisor-facing status report.
+- No end-to-end pipeline stage has been run on real data.
 - AlphaFold Server prediction download, pTM/iPTM capture, model conversion, feature extraction, correlation analysis and DockQ comparison remain to be performed.
 - LASSO/Ridge/ElasticNet modeling, scaled model comparison and evaluation on 10 extra complexes are planned and not implemented.
 
