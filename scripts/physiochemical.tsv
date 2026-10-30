@@ -1,0 +1,20 @@
+Parameter	Why useful for inferring expressibility	Tool(s)
+Sequence length and molecular weight	Provides basic size information for comparing candidates and planning expected yield/recovery. Length alone is not a strong predictor.	ProtParam; peptides.py
+Theoretical isoelectric point (pI)	Helps anticipate net charge at the expression or purification pH. Solubility can decrease near the pI, depending on surface properties and buffer conditions.	ProtParam; peptides.py
+Net charge at relevant pH	Can influence colloidal stability, nonspecific interactions and solubility; charge alone does not guarantee good expression.	peptides.py
+Amino-acid composition	Unusual compositional biases or high hydrophobic/aromatic content may signal solubility or folding challenges. Cysteine content is relevant to disulfide formation.	ProtParam; peptides.py
+GRAVY (grand average of hydropathicity)	A global average hydrophobicity measure. Higher positive values can indicate greater hydrophobic character; local patches may matter even when GRAVY is low.	ProtParam; peptides.py
+Local hydrophobicity profile	Highlights contiguous hydrophobic regions that may promote self-association, nonspecific interactions or aggregation.	peptides.py hydrophobicity profile
+Surface hydrophobic patches	Exposed hydrophobic residues can promote intermolecular association and aggregation even if overall hydrophobicity is moderate.	CamSol structure-corrected mode
+Predicted intrinsic solubility	Provides a sequence-based estimate of solubility and may highlight regions contributing to poor solubility. Useful for ranking candidates, not as a definitive yield prediction.	CamSol Intrinsic
+Structure-corrected solubility	Uses spatial arrangement and solvent exposure of residues to identify potential solubility liabilities not apparent from sequence averages.	CamSol structure-corrected mode
+Aggregation propensity	Identifies sequence segments or structural regions that may nucleate aggregation; especially useful when candidates have similar global solubility scores.	AGGRESCAN3D for structures; CamSol; sequence-based aggregation predictors
+Instability index	A heuristic based on dipeptide composition that may flag sequence-derived stability concerns. It is not a direct measurement of folding stability, half-life or bacterial yield.	ProtParam; peptides.py
+Aliphatic index	A rough descriptor historically associated with thermostability in globular proteins; limited standalone predictive value for binder expression.	ProtParam; peptides.py
+Aromatic residue content (F, W, Y)	Affects hydrophobic packing and binding, but excessive exposed aromatic surface may contribute to aggregation. Interpret with structure and binding-site context.	ProtParam; peptides.py; structure viewer
+Cysteine number and arrangement	Relevant to disulfide formation, native folding and mispairing. The expression compartment matters because the standard bacterial cytoplasm is reducing.	ProtParam; sequence inspection; structure prediction
+Secondary-structure percentages (helix, strand, coil)	Unexpected loss of the intended fold, excessive disorder or exposed beta-strand edges may indicate folding or aggregation risks. Overall percentages alone are not definitive.	mkdssp
+Solvent-accessible surface area (SASA)	Quantifies solvent exposure and helps identify exposed hydrophobic residues or poorly packed regions that may contribute to aggregation or instability.	mkdssp/DSSP; FreeSASA; predicted structure
+Structural confidence and disorder	Low-confidence loops or disordered regions may indicate flexibility or uncertain folding, but low model confidence is not itself proof of poor expression.	AlphaFold confidence metrics
+Sequence complexity and low-complexity regions	Repetitive or compositionally biased regions may affect solubility, degradation or nonspecific interactions; use as a supporting descriptor.	peptides.py sequence statistics; SEG or equivalent
+Extinction coefficient at 280 nm	Does not predict expressibility, but supports accurate concentration measurement of purified protein and fair yield comparisons across candidates.	ProtParam
