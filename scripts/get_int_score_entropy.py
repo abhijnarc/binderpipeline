@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
+import os
+
+PREFIX = os.environ.get("PREFIX", "pilot10")
 
 # Load input file
-df = pd.read_csv("bench20_intsummary.csv")
+df = pd.read_csv(f"{PREFIX}_intsummary.csv")
 
 # Define interaction weights
 weights = {
@@ -27,14 +30,12 @@ result = (
 df["total_count"] = df.groupby(group_cols)["count"].transform("sum")
 
 # Calculate fraction of each interaction type
-df["p"] = df["count"] / df["total_count"]
+df["p"] = df["count"] / df["total_count"].where(df["total_count"] > 0)
 
 # Calculate -p * ln(p), treating p = 0 as zero
-df["entropy_term"] = np.where(
-    df["p"] > 0,
-    -df["p"] * np.log(df["p"]),
-    0
-)
+df["entropy_term"] = 0.0
+positive = df["p"] > 0
+df.loc[positive, "entropy_term"] = -df.loc[positive, "p"] * np.log(df.loc[positive, "p"])
 
 # Sum entropy terms for each complex-pose
 entropy = (
@@ -50,6 +51,6 @@ result_complex = result.groupby('complex', as_index=False).agg(
             {'score': 'mean', 'shannon_entropy': 'mean'})
 
 # Save output
-result_complex.to_csv("interaction_scores_entropy.csv", index=False)
+result_complex.to_csv(f"{PREFIX}_interaction_scores_entropy.csv", index=False)
 
 print(result_complex)

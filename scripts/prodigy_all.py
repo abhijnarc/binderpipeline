@@ -6,8 +6,10 @@
 import pandas as pd
 import numpy as np
 import subprocess
+import os
 
 DCUT = 4.5
+PREFIX = os.environ.get("PREFIX", "pilot10")
 
 def prodigy_analyze(compname, nmod):
 
@@ -17,25 +19,31 @@ def prodigy_analyze(compname, nmod):
     pdb = compname + '_' + nmod + '_0002.pdb'
     print(f"Analyzing {pdb} ....")
 
-    # run prodigy as a system command
-    args = ('/home/user/miniconda3/bin/prodigy ' + pdb +
-            ' --selection A B --contact_list --distance-cutoff ' + str(DCUT))
-    pres = subprocess.run(args, capture_output = True, shell = True,
-                             encoding = "utf-8").stdout
-    perr = subprocess.run(args, capture_output = True, shell = True,
-                             encoding = "utf-8").stderr
+    # Run PRODIGY once. Its dissociation constant is reported in molar units.
+    args = [
+        "/home/wetlab/miniforge3/envs/ppi-affinity/bin/prodigy", pdb,
+        "--selection", "A", "B", "--contact_list",
+        "--distance-cutoff", str(DCUT),
+    ]
+    pres = subprocess.run(args, capture_output=True, text=True, check=False)
 
-    # get the values
-    if len(perr) > 0:
-        energy = kd = 9999
-    else:
-        p_array = pres.splitlines()
-        kd = float(p_array[-1].split(':')[1])*1e09
-        energy = float(p_array[-2].split(':')[1])
+    energy = kd = np.nan  # Failed parses replace the old 9999 sentinel with NaN.
+    if pres.returncode == 0:
+        affinity_line = next((line for line in pres.stdout.splitlines()
+                              if "Predicted binding affinity" in line), None)
+        kd_line = next((line for line in pres.stdout.splitlines()
+                        if "Predicted dissociation constant" in line), None)
+        try:
+            energy = float(affinity_line.rsplit(":", 1)[1].strip())
+            kd = float(kd_line.rsplit(":", 1)[1].strip().split()[0])
+            if kd <= 0:
+                energy = kd = np.nan
+        except (AttributeError, ValueError, IndexError):
+            energy = kd = np.nan
 
     metrics["complex"] = compname
     metrics["nconf"] = nmod
-    metrics["logKdnM"] = np.log(kd)
+    metrics["logKd"] = np.log10(kd) if pd.notna(kd) else np.nan
     metrics['energy'] = energy
 
     return metrics
@@ -44,7 +52,7 @@ def prodigy_analyze(compname, nmod):
 if __name__ == "__main__":
 
     # complex list file name
-    comp_file = "../comp_list"
+    comp_file = os.environ.get("COMP_LIST", "../comp_list")
 
     # empty lists for prodigy metric
     prod_list = []
@@ -71,5 +79,6 @@ if __name__ == "__main__":
                         .mean().reset_index() )
 
     # save the df to csv
-    prod_complex.to_csv('bench20_prod.csv', encoding = 'utf-8', index = False)
-    print("Done ... saved prodigy metric values to csv...")
+    output_file = f"{PREFIX}_prodigy.csv"
+    prod_complex.to_csv(output_file, encoding='utf-8', index=False)
+    print(f"Done ... saved PRODIGY metrics to {output_file}...")

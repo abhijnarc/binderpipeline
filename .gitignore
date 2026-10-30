@@ -1,0 +1,39 @@
+# Datasets and indexes
+pdbbind/
+
+# AF3 outputs, relaxed PDBs, Rosetta score files
+*.pdb
+*.cif
+*.sc
+*.log
+dockq_results/
+
+# Generated CSV outputs
+*.csv
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Jupyter notebooks cache
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Rosetta installation folder
+rosetta*/
+
+# Keep scripts/ tracked (not ignored)
+
+# Pilot benchmark tables and sequence-derived AF3 job inputs
+/comp_list
+/clone_list
+/pilot10/*.tsv
+/pilot10/*.csv
+/alphafold3_server/jobs/*.json
+/alphafold3_server/pilot10_sequences.fasta
+/alphafold3_server/pilot10_chain_mapping.tsv

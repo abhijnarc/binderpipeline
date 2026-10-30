@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
+import os
+
+PREFIX = os.environ.get("PREFIX", "pilot10")
 
 # Load input file
-df = pd.read_csv("bench20_ifmetric.csv")
+df = pd.read_csv(f"{PREFIX}_ifmetric.csv")
 
 #%%
 
@@ -23,7 +26,8 @@ df['unsat_density'] = np.where(
 #%%
 # agregate and calculate mean values for each complex
 
-# mean of 3rd column onwards
+# The two derived columns are added above, so columns [2:] includes both
+# dG_norm and unsat_density as well as the original InterfaceAnalyzer metrics.
 
 cols_to_mean = df.columns[2:]
 
@@ -34,6 +38,6 @@ df_complex= df.groupby(df.columns[0])[cols_to_mean].mean().reset_index()
 #%%
 
 # Save output
-df_complex.to_csv("ifmetric_summary.csv", index=False)
+df_complex.to_csv(f"{PREFIX}_ifmetric_summary.csv", index=False)
 
 print(df_complex)

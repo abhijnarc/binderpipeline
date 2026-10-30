@@ -8,6 +8,13 @@ from collections import defaultdict
 import glob
 import os
 
+PREFIX = os.environ.get("PREFIX", "pilot10")
+INTERACTION_TYPES = ("HydrogenBond", "Hydrophobic", "SaltBridge", "PiStack")
+INTERACTION_COLUMNS = (
+    "interaction", "protein_chain", "protein_residue", "protein_resnr",
+    "ligand_chain", "ligand_residue", "distance", "donor",
+)
+
 ##########################################################################
 # Parse PLIP XML
 ##########################################################################
@@ -139,17 +146,26 @@ def parse_plip_xml(xmlfile):
     # Convert to dataframe
     ######################################################################
 
-    df = pd.DataFrame(interactions)
+    df = pd.DataFrame(interactions, columns=INTERACTION_COLUMNS)
 
     ######################################################################
     # Summary
     ######################################################################
 
-    summary_df = (
-        df.groupby(["protein_chain", "interaction"])
-          .size()
-          .reset_index(name="count")
-    )
+    if df.empty:
+        # plip_loop.sh explicitly supplies partners [[A], [B]]. Emit a complete
+        # zero-count grid so downstream score/entropy aggregation keeps the pose.
+        summary_df = pd.DataFrame(
+            [(chain, interaction, 0) for chain in ("A", "B")
+             for interaction in INTERACTION_TYPES],
+            columns=["protein_chain", "interaction", "count"],
+        )
+    else:
+        summary_df = (
+            df.groupby(["protein_chain", "interaction"])
+              .size()
+              .reset_index(name="count")
+        )
 
 
     return df, summary_df
@@ -161,7 +177,7 @@ def parse_plip_xml(xmlfile):
 if __name__ == "__main__":
 
     # complex list file name
-    comp_file = "../../comp_list"
+    comp_file = os.environ.get("COMP_LIST", "../../comp_list")
 
     # empty lists for interactions and summary
     interactions_list = []
@@ -194,9 +210,11 @@ if __name__ == "__main__":
     summary_df = pd.concat(summary_list, ignore_index=True) 
 
     # save the df's to csv
-    interactions_df.to_csv('bench20_interactions.csv', encoding = 'utf-8', index = False)
-    summary_df.to_csv('bench20_intsummary.csv', encoding = 'utf-8', index = False)
+    interactions_path = f"{PREFIX}_interactions.csv"
+    summary_path = f"{PREFIX}_intsummary.csv"
+    interactions_df.to_csv(interactions_path, encoding='utf-8', index=False)
+    summary_df.to_csv(summary_path, encoding='utf-8', index=False)
 
-    print("Done  ... written the master and summary interactions csv files...")
+    print(f"Done ... wrote {interactions_path} and {summary_path}...")
 
     # Thats all

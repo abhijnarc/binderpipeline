@@ -4,6 +4,9 @@
 # Line 1 : complex
 
 import pandas as pd
+import os
+
+PREFIX = os.environ.get("PREFIX", "pilot10")
 
 def parse_interface_analyzer(compname, nmod):
     # make ifmetric file name
@@ -41,7 +44,7 @@ def parse_interface_analyzer(compname, nmod):
 if __name__ == "__main__":
 
     # complex list file name
-    comp_file = "../../comp_list"
+    comp_file = os.environ.get("COMP_LIST", "../../comp_list")
 
     # empty lists for IF metric
     ifmetric_list = []
@@ -63,5 +66,6 @@ if __name__ == "__main__":
     ifmetric_master = pd.DataFrame(ifmetric_list)
 
     # save the df to csv
-    ifmetric_master.to_csv('bench20_ifmetric.csv', encoding = 'utf-8', index = False)
-    print("Done ... saved IF metric values to csv...")
+    output_file = f"{PREFIX}_ifmetric.csv"
+    ifmetric_master.to_csv(output_file, encoding='utf-8', index=False)
+    print(f"Done ... saved IF metric values to {output_file}...")
