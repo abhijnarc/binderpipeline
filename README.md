@@ -1,4 +1,4 @@
-# Protein–Protein Interface Affinity Pipeline
+# Protein–Protein Interface Analysis Pipeline
 
 ## Objective
 

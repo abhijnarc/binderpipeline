@@ -1,7 +1,5 @@
 # Changes from the original scripts
 
-`git log --stat -- scripts/` shows the original script set first added in commit `1bc46983b34c404ff6d267dd999220385d80b676` (`scripts`, October 29, 2026). The entries below describe only differences visible in `git diff 1bc46983b34c404ff6d267dd999220385d80b676 -- scripts/` and additions outside that commit.
-
 | File | What changed | Why |
 |---|---|---|
 | `scripts/get_int_score_entropy.py` | Reads/writes prefix-based filenames; avoids division by zero and computes entropy only for positive fractions. | Supports separate pilot outputs and handles empty interaction totals without creating invalid entropy values. |
@@ -16,7 +14,7 @@
 
 ## Additional files outside the original scripts commit
 
-The following files are present in the working tree but were not part of the original scripts commit. This is an inventory, not a claim about when or by whom each file was created.
+The following files are present in the working tree but were not part of the original scripts commit.
 
 - Root documentation/configuration: `.gitignore`, `ALPHAFOLD_SERVER.md`, `ENVIRONMENT.md`, `README.md`, `CHANGES.md`.
 - Added helpers under `scripts/`: `dockq_all.sh`, `prepare_alphafold_server_inputs.py`.

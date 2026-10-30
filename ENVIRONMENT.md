@@ -1,9 +1,5 @@
 # Environment Setup and Verification Report
 
-## Verification date
-
-October 30, 2026 (Asia/Kolkata)
-
 This report records environment and file-presence checks only. The analysis pipeline has not been run on real data, and no pipeline component is claimed as tested on real data.
 
 ## Environment checks
@@ -52,7 +48,6 @@ The supplied Rosetta build uses `.static.linuxgccrelease` names. The wrappers cu
 
 ## Next steps
 
-1. Confirm the requested Rosetta binary names or continue using the installed `.static` binaries already referenced by the wrappers.
-2. Review the selected complex inputs, chain mapping, and experimental Kd table.
-3. Submit the selected sequences through AlphaFold Server and download all five CIF models and confidence JSON files per complex.
-4. Review chain IDs, convert the downloaded models, and then begin a controlled real-data pipeline run.
+1. Review the selected complex inputs, chain mapping, and experimental Kd table.
+2. Submit the selected sequences through AlphaFold Server and download all five CIF models and confidence JSON files per complex.
+3. Review chain IDs, convert the downloaded models, and then begin a controlled real-data pipeline run.
