@@ -1,4 +1,4 @@
-# Protein–Protein Interface Affinity Pipeline
+# Protein–Protein Interface Analysis Pipeline
 
 ## Objective
 
@@ -120,13 +120,12 @@ See [ENVIRONMENT.md](ENVIRONMENT.md) for paths and the complete read-only check 
 
 - PLIP, Open Babel, Prodigy, DockQ and the requested Python packages are available in their Conda environments.
 - The supplied static Rosetta executables and repository wrappers are present. The wrappers refer to static binary names rather than the requested `.default` names.
-- PDBBind files and the 20-complex `bench20` input set are present on this workstation.
 
 ### Not tested yet
 
 - The crystal PRODIGY baseline has run on 20 real PDBBind structures; no AF3-based or relaxed-model end-to-end stage has run.
-- AlphaFold Server prediction download, pTM/iPTM capture, model conversion, feature extraction, model comparison and DockQ comparison remain to be performed. The crystal PRODIGY rank correlations are rho = 0.0925 (Spearman) and tau = 0.0686 (Kendall).
-- LASSO/Ridge/ElasticNet modeling, scaled model comparison and evaluation on held-out complexes are planned and not implemented.
+- AlphaFold Server prediction download, pTM/iPTM capture, model conversion, feature extraction, correlation analysis and DockQ comparison remain to be performed. The crystal PRODIGY rank correlations are rho = 0.0925 (Spearman) and tau = 0.0686 (Kendall).
+- LASSO/Ridge/ElasticNet modeling, scaled model comparison and evaluation on 10 extra complexes are planned and not implemented.
 
 ### Next steps
 

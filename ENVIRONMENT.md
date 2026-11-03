@@ -1,9 +1,5 @@
 # Environment Setup and Verification Report
 
-## Verification date
-
-October 30, 2026 (Asia/Kolkata)
-
 This report records environment checks, data-presence checks, and the Phase A crystal PRODIGY baseline. No AlphaFold Server or relaxed-model pipeline stage has been run.
 
 ## Environment checks
@@ -67,7 +63,6 @@ No analysis code or dependencies were installed for this track.
 
 ## Next steps
 
-1. Confirm the requested Rosetta binary names or continue using the installed `.static` binaries already referenced by the wrappers.
-2. Review `bench20/selection.tsv`, `alphafold3_server/bench20_chain_mapping.tsv`, and the experimental Kd table.
-3. Submit the 20 prepared sequences through AlphaFold Server and download all five CIF models and confidence JSON files per complex, after reviewing output-use terms.
-4. Review chain IDs, convert the downloaded models, and then begin a controlled real-data pipeline run.
+1. Review `bench20/selection.tsv`, `alphafold3_server/bench20_chain_mapping.tsv`, and the experimental Kd table.
+2. Submit the 20 prepared sequences through AlphaFold Server and download all five CIF models and confidence JSON files per complex, after reviewing output-use terms.
+3. Review chain IDs, convert the downloaded models, and then begin a controlled real-data pipeline run.
