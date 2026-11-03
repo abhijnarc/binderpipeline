@@ -10,7 +10,7 @@ The Server accepts standard one-letter amino acid codes only; B, J, O, U, X, gap
 
 ## Project findings
 
-The repository currently has `scripts/cif_to_pdb.py`, DockQ/Prodigy-oriented analysis scripts, PLIP parsers, Rosetta wrappers, and `scripts/INDEX_general_PP.2020R1.txt`. The index contains complex IDs, affinity text and selected PDB chain labels in comments, but it does not provide the chain sequences in a machine-ready table. No chain extraction script or input sequence table was present in the inspected project. PDBBind data are excluded by `.gitignore`; obtain sequences from the selected crystal structures using a documented method and retain the original structure and chain identifiers.
+The repository has `scripts/select_complexes.py` for the 20-complex selection and `scripts/prepare_bench20_af3.py` to build Server jobs, a FASTA and native-chain mapping from the selected crystal structures. The index contains affinity text and chain labels in comments. `pdbbind/` is excluded by `.gitignore`; retain the selected structure IDs, native chain IDs and sequence-source notes.
 
 `scripts/prepare_alphafold_server_inputs.py` consumes a CSV with one row per input chain:
 
@@ -42,7 +42,7 @@ alphafold3_server/
   logs/         local validation/submission notes
 ```
 
-The 10-complex pilot jobs are under `alphafold3_server/jobs/`; their sequences and mapping are in `alphafold3_server/pilot10_sequences.fasta` and `alphafold3_server/pilot10_chain_mapping.tsv`.
+The 20-complex jobs are under `alphafold3_server/jobs/bench20_ready/`; use only that folder. Earlier Phase A drafts and the 10 pilot10 job JSONs are archived under `archive/superseded_phaseA/` and `archive/pilot10/af3_jobs/`; do not submit them. The sequence FASTA and native-to-A/B mapping are `alphafold3_server/bench20_sequences.fasta` and `alphafold3_server/bench20_chain_mapping.tsv`. The selection was generated with `python scripts/select_complexes.py`, then the AF3 artifacts with `python scripts/prepare_bench20_af3.py`. The selector uses a fixed seed and records its X-ray method checks in `bench20/experimental_methods.tsv`; the job generator refuses to overwrite existing JSON files.
 
 1. Select the desired PDBBind complexes and extract the intended chain sequences from their crystal structures. Record exact chain identifiers and source structure in the input CSV. Resolve whether a chain should be a complete biological construct or only a crystallized fragment before extraction; the preparation tool cannot decide this.
 2. Generate jobs with the command above. Review every sequence and mapping in the manifest. Server entity order follows the CSV row order for that complex. The Server does not preserve input PDB chain IDs as an explicit input setting; confirm the produced mmCIF chain IDs after download.
@@ -54,37 +54,37 @@ The 10-complex pilot jobs are under `alphafold3_server/jobs/`; their sequences a
 
 The Server documents pLDDT (local confidence), PAE (relative-position error), pTM and ipTM (complex/interface confidence), plus a ranking score for ranking samples. The per-sample summary confidence JSON contains scalar keys `ptm`, `iptm`, and `ranking_score`. Record these values and the source filenames in `metadata/af3_confidence.tsv`; the header-only file is provided until predictions are downloaded. Higher ipTM generally indicates higher interface confidence; these are model confidence estimates, not experimental binding-affinity measurements. Retain the original JSON for every structure, not only the top-ranked sample. See [Server FAQ: confidence and outputs](https://alphafoldserver.com/faq) and the [official output terms](https://alphafoldserver.com/output-terms).
 
-The current official FAQ states a limit of 30 submitted jobs per day and permits uploading JSON files containing up to 100 jobs. Thus these 10 individual jobs fit in one day if the account has at least 10 jobs of quota remaining. Limits and terms can change; check the [live FAQ](https://alphafoldserver.com/faq) immediately before submission.
+The current official FAQ states a limit of 30 submitted jobs per day and permits uploading JSON files containing up to 100 jobs. Thus 20 individual jobs fit within the published 30-job daily limit if the account has at least 20 jobs of quota remaining. Limits and terms can change; check the [live FAQ](https://alphafoldserver.com/faq) immediately before submission.
 
-## Pilot job state and working directory
+## Bench20 job state and working directory
 
-The pilot JSON files are ready under `alphafold3_server/jobs/`. They have not been submitted. Phase B is gated on manual Server submission/download and explicit user confirmation; see [pilot10/PHASE_B.md](pilot10/PHASE_B.md). Do not infer that downloaded predictions exist from the prepared jobs.
+The bench20 JSON files are ready under `alphafold3_server/jobs/bench20_ready/`. They have not been submitted. Follow [bench20/PHASE_B.md](bench20/PHASE_B.md) for manual submission/download instructions. Do not infer that downloaded predictions exist from the prepared jobs.
 
-The analysis scripts read and write many filenames relative to the process working directory. For the pilot, use one dedicated run directory and pass absolute paths for list/model inputs. For example, from the repository root:
+The analysis scripts read and write many filenames relative to the process working directory. For the bench20 run, use one dedicated run directory and pass absolute paths for list/model inputs. For example, from the repository root:
 
 ```bash
-mkdir -p pilot10/work alphafold3_server/predictions/raw/AF3_models
-cd pilot10/work
-export PREFIX=pilot10
+mkdir -p bench20/work alphafold3_server/predictions/raw/AF3_models
+cd bench20/work
+export PREFIX=bench20
 export COMP_LIST="$OLDPWD/comp_list"
 export CLONE_LIST="$OLDPWD/clone_list"
 export AF3_MODEL_DIR="$OLDPWD/alphafold3_server/predictions/raw/AF3_models"
 export RELAXED_MODEL_DIR="$PWD"
-export CHAIN_MAPPING="$OLDPWD/alphafold3_server/pilot10_chain_mapping.tsv"
+export CHAIN_MAPPING="$OLDPWD/alphafold3_server/bench20_chain_mapping.tsv"
 export EXPT_FILE="$OLDPWD/expt_kd.csv"
 ```
 
-After extracting each archive into `alphafold3_server/predictions/raw/<id>/`, convert the five model CIFs from `alphafold3_server/predictions/raw/` by running `python <repo>/scripts/cif_to_pdb.py` with that directory as the working directory. The converter writes to `AF3_models/` and requires that output directory to exist; it has not yet been validated against a real Server archive. Check the output names, chain IDs, and sequences before using them. Then use the dedicated `pilot10/work` directory as above.
+After extracting each archive into `alphafold3_server/predictions/raw/<id>/`, convert the five model CIFs from `alphafold3_server/predictions/raw/` by running `python <repo>/scripts/cif_to_pdb.py` with that directory as the working directory. The converter writes to `AF3_models/` and requires that output directory to exist; it has not yet been validated against a real Server archive. Check the output names, chain IDs, and sequences before using them. Then use the dedicated `bench20/work` directory as above.
 
-Run the relaxation, InterfaceAnalyzer, DockQ, and PLIP shell wrappers from this working directory (or pass the ten IDs explicitly). The relaxed PDBs, scorefiles, PLIP files, and parser CSVs are written/read here; DockQ JSON/log output goes to the repository-level `dockq_results/` by default. Run `plip_parser_all.py` and `ifmetric_parser_all.py` here so they see their XML/score files. Run `ifmetric_addl.py`, `get_int_score_entropy.py`, and `merge_corr.py` here after the preceding CSVs exist. `PREFIX` names the generated tables, while `COMP_LIST`, `CLONE_LIST`, `AF3_MODEL_DIR`, `RELAXED_MODEL_DIR`, `CHAIN_MAPPING`, and `EXPT_FILE` avoid relying on the scripts' legacy relative-path defaults. Outputs are not silently moved between directories.
+Run the relaxation, InterfaceAnalyzer, DockQ, and PLIP shell wrappers from this working directory (or pass the 20 IDs explicitly). The relaxed PDBs, scorefiles, PLIP files, and parser CSVs are written/read here; DockQ JSON/log output goes to the repository-level `dockq_results/` by default. Run `plip_parser_all.py` and `ifmetric_parser_all.py` here so they see their XML/score files. Run `ifmetric_addl.py`, `get_int_score_entropy.py`, and `merge_corr.py` here after the preceding CSVs exist. `PREFIX` names the generated tables, while `COMP_LIST`, `CLONE_LIST`, `AF3_MODEL_DIR`, `RELAXED_MODEL_DIR`, `CHAIN_MAPPING`, and `EXPT_FILE` avoid relying on the scripts' legacy relative-path defaults. Outputs are not silently moved between directories.
 
 The shell wrappers accept complex IDs as positional arguments, which avoids reading `CLONE_LIST`. `prodigy_all.py`, `plip_parser_all.py`, and `ifmetric_parser_all.py` use `COMP_LIST`; set it explicitly as above. `merge_corr.py` also accepts `INTF_FILE`, `IFM_FILE`, and `PROD_FILE` when input tables are stored outside the current directory. The PLIP and Prodigy executable paths and the supplied GCC 7 Rosetta binary paths are fixed to the verified paths on this workstation.
 
-For reproducibility, retain the exact input CSV, generated JSON, manifest, downloaded archive, submission date/job ID, and relevant output JSON. Server-side model/database versions and defaults can change; include retrieval date and any visible settings in the metadata. The empty seed setting allows a random seed, so exact prediction reproduction is not guaranteed.
+For reproducibility, retain the exact input CSV, generated JSON, manifest, downloaded archive, submission date/job ID, and relevant output JSON. Server-side model/database versions and defaults can change; include retrieval date and any visible settings in the metadata. Bench20 jobs specify one fixed seed. Server-side model/database versions may still change, so exact prediction reproduction is not guaranteed.
 
 ## Downstream compatibility assessment
 
-The downloaded structural predictions are mmCIF. The repository's `scripts/cif_to_pdb.py` reads local `????/*.cif` and writes PDBs under `AF3_models/`; it expects that directory to exist and assumes a directory/file naming layout that differs from the per-job download layout. It should not be run directly on the raw archive layout without organizing a working copy. It uses Biopython's `MMCIFParser`/`PDBIO`; conversion may lose mmCIF-only metadata and PDB has chain/residue limits, so retain and cite the original mmCIF. The pilot wrappers expect converted filenames `<id>_0.pdb` through `<id>_4.pdb`; actual Server archives still need a representative conversion check.
+The downloaded structural predictions are mmCIF. The repository's `scripts/cif_to_pdb.py` reads local `????/*.cif` and writes PDBs under `AF3_models/`; it expects that directory to exist and assumes a directory/file naming layout that differs from the per-job download layout. It should not be run directly on the raw archive layout without organizing a working copy. It uses Biopython's `MMCIFParser`/`PDBIO`; conversion may lose mmCIF-only metadata and PDB has chain/residue limits, so retain and cite the original mmCIF. The bench20 wrappers expect converted filenames `<id>_0.pdb` through `<id>_4.pdb`; actual Server archives still need a representative conversion check.
 
 The current wrappers reveal additional integration requirements:
 
@@ -93,7 +93,7 @@ The current wrappers reveal additional integration requirements:
 | DockQ (`dockq_all.sh`) | Reads original `<id>_<0..4>.pdb` and relaxed `<id>_<0..4>_0002.pdb`; native from `pdbbind/P-P/<id>_complex.pdb`. | Writes one JSON result per original and relaxed sample under `dockq_results/`. Requires two structures with a valid chain/residue correspondence. Tested on a PDBBind control, not an AF3 prediction. |
 | `relax_parallel.sh` | Reads five PDBs from `AF3_MODEL_DIR`; defaults to `../AF3/AF3_models`. | Uses the verified GCC 7 FastRelax binary and renames Rosetta `_0001.pdb` output to the `_0002.pdb` convention consumed downstream. One-model run passed. |
 | `ifanalyze_loop.sh` | Reads relaxed `<id>_<0..4>_0002.pdb`, assumes the two chains form the interface. | Uses the verified InterfaceAnalyzer binary. Writes `<id>_<sample>_ifmetric.sc`, including the five fields parsed by `ifmetric_parser_all.py`. One-model run and parser passed. |
-| `ifmetric_parser_all.py` | Reads `<id>_<sample>_ifmetric.sc`. | Output filename and SCORE header were verified with the installed InterfaceAnalyzer. Set `COMP_LIST` to the absolute pilot list path; score files are read from the working directory. |
+| `ifmetric_parser_all.py` | Reads `<id>_<sample>_ifmetric.sc`. | Output filename and SCORE header were verified with the installed InterfaceAnalyzer. Set `COMP_LIST` to the absolute bench20 list path; score files are read from the working directory. |
 | PLIP scripts | PLIP wrapper reads each relaxed `_0002.pdb`, selects A/B, writes `<id>_<sample>.xml` and `.txt`. | Updated executable path; one-model wrapper and five-sample parser smoke checks passed. Confirm prediction chain IDs are A/B. |
 | `prodigy_all.py` | Reads five relaxed `_0002.pdb` files with selection A B. | Updated executable path; five-input script run and CSV output passed using the same representative structure. Set `COMP_LIST` explicitly; PDB files are read from the working directory. |
 
@@ -106,4 +106,4 @@ For DockQ comparisons, the prediction and crystal reference must represent corre
 - Download and archive the results; fill submission metadata and verify actual output chain IDs.
 - Verify CIF-to-PDB conversion and chain mapping on a representative real Server download before a benchmark run.
 - Populate the confidence TSV with per-sample pTM/ipTM values from the downloaded summary JSON files.
-- Before a pilot run, follow the dedicated working-directory and environment-variable recipe above; verify the chosen model directory and chain mapping against each downloaded archive.
+- Before a bench20 run, follow the dedicated working-directory and environment-variable recipe above; verify the chosen model directory and chain mapping against each downloaded archive.

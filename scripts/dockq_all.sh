@@ -3,13 +3,13 @@ set -euo pipefail
 
 DOCKQ=/home/wetlab/miniforge3/envs/ppi-affinity/bin/DockQ
 PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-AF3_MODEL_DIR=${AF3_MODEL_DIR:-../AF3/AF3_models}
+AF3_MODEL_DIR=${AF3_MODEL_DIR:-$PROJECT_ROOT/alphafold3_server/predictions/AF3_models}
 RELAXED_MODEL_DIR=${RELAXED_MODEL_DIR:-.}
 NATIVE_DIR=${NATIVE_DIR:-$PROJECT_ROOT/pdbbind/P-P}
 RESULT_DIR=${DOCKQ_RESULT_DIR:-$PROJECT_ROOT/dockq_results}
-CHAIN_MAPPING=${CHAIN_MAPPING:-$PROJECT_ROOT/alphafold3_server/pilot10_chain_mapping.tsv}
+CHAIN_MAPPING=${CHAIN_MAPPING:-$PROJECT_ROOT/alphafold3_server/bench20_chain_mapping.tsv}
 MODEL_COUNT=${MODEL_COUNT:-5}
-CLONE_LIST=${CLONE_LIST:-../clone_list}
+CLONE_LIST=${CLONE_LIST:-$PROJECT_ROOT/clone_list}
 
 if (($#)); then
     complexes=("$@")

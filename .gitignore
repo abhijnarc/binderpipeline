@@ -29,11 +29,23 @@ rosetta*/
 
 # Keep scripts/ tracked (not ignored)
 
-# Pilot benchmark tables and sequence-derived AF3 job inputs
+# Benchmark tables and sequence-derived AF3 job inputs (PDBBind-derived;
+# regenerate with scripts/select_complexes.py and scripts/prepare_bench20_af3.py)
 /comp_list
 /clone_list
-/pilot10/*.tsv
-/pilot10/*.csv
-/alphafold3_server/jobs/*.json
-/alphafold3_server/pilot10_sequences.fasta
-/alphafold3_server/pilot10_chain_mapping.tsv
+/bench20/*.tsv
+/alphafold3_server/jobs/
+/alphafold3_server/*.fasta
+/alphafold3_server/*_chain_mapping.tsv
+
+# AF3 Server downloads (archives, extracted outputs, confidence JSONs)
+/alphafold3_server/predictions/*
+!/alphafold3_server/predictions/.gitkeep
+
+# Phase B working directory (relaxed models, PLIP output, parser tables)
+/bench20/work/
+
+# Archived pilot10 and superseded Phase A drafts; keep only the notes
+/archive/**
+!/archive/**/
+!/archive/**/*.md

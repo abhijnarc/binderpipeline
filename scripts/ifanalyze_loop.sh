@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 ROSETTA_IA=/home/wetlab/tools/rosetta.binary.ubuntu.release-408/main/source/build/src/release/linux/5.4/64/x86/gcc/7/static/InterfaceAnalyzer.static.linuxgccrelease
 ROSETTA_DB=/home/wetlab/tools/rosetta.binary.ubuntu.release-408/main/database
-CLONE_LIST=${CLONE_LIST:-../clone_list}
+CLONE_LIST=${CLONE_LIST:-$PROJECT_ROOT/clone_list}
 MODEL_COUNT=${MODEL_COUNT:-5}
 
 if (($#)); then

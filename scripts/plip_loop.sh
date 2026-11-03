@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 PLIP=/home/wetlab/miniforge3/envs/plip/bin/plip
 PLIPDIR=${PLIPDIR:-./plip}
-CLONE_LIST=${CLONE_LIST:-../clone_list}
+CLONE_LIST=${CLONE_LIST:-$PROJECT_ROOT/clone_list}
 MODEL_COUNT=${MODEL_COUNT:-5}
 
 if (($#)); then

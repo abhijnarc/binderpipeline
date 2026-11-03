@@ -3,13 +3,13 @@
 ## Objective
 
 Build an ML model from protein-interface parameters to predict experimental Kd. The intended comparison is whether the interface-parameter model predicts Kd better than PRODIGY.
-This repository is at setup stage; the workflow has not been run on real data.
+The 20-complex selection and crystal PRODIGY baseline have been run; the AF3-based feature pipeline has not yet been run.
 
 ## Planned pipeline
 
 ```mermaid
 flowchart TD
-  A["PDBBind selection<br/>2 chains; each over 50 AA<br/>X-ray; exact Kd<br/>manual; no selection script"] --> B["Chain sequences<br/>scripts/prepare_alphafold_server_inputs.py"]
+  A["PDBBind selection<br/>2 chains; each over 50 AA<br/>X-ray; exact Kd<br/>scripts/select_complexes.py; bench20"] --> B["Chain sequences<br/>scripts/prepare_bench20_af3.py"]
   B --> C["AlphaFold Server<br/>manual submission; 5 models<br/>iPTM and PTM"]
   C --> D["scripts/cif_to_pdb.py<br/>CIF to PDB"]
   D --> E["Rosetta FastRelax<br/>scripts/relax_parallel.sh"]
@@ -24,7 +24,7 @@ flowchart TD
   K --> M
   L --> M
   M --> N["LASSO / Ridge / ElasticNet<br/>with scaling"]
-  N --> O["Validation on 10 extra complexes"]
+  N --> O["Validation on a held-out set"]
   C --> P["DockQ comparison<br/>AF3 vs relaxed vs crystal<br/>scripts/dockq_all.sh"]
   E --> P
   Q["Known issue: chain names are assumed A/B<br/>and relative input paths depend on working directory"] -.-> F
@@ -45,9 +45,41 @@ Green means the relevant script and environment are present; it does not mean th
 
 ## Separate physicochemical-properties track
 
-| Track | Status | Note |
-|---|---|---|
-| Physicochemical properties for `expressibility.xlsx` | Not started | No processing script or completed analysis is included in the current setup. |
+This track is not started. The property names and suggested tools below come from [`scripts/physiochemical.tsv`](scripts/physiochemical.tsv), which contains 19 parameter rows. The original request said 18; the supplied file lists 19.
+
+| Property | Tier (1 = sequence only, 2 = needs structure; 1 + 2 = method-dependent) | Tool | Status |
+|---|---:|---|---|
+| Sequence length and molecular weight | 1 | ProtParam; `peptides.py` | Not started |
+| Theoretical isoelectric point (pI) | 1 | ProtParam; `peptides.py` | Not started |
+| Net charge at relevant pH | 1 | `peptides.py` | Not started |
+| Amino-acid composition | 1 | ProtParam; `peptides.py` | Not started |
+| GRAVY | 1 | ProtParam; `peptides.py` | Not started |
+| Local hydrophobicity profile | 1 | `peptides.py` hydrophobicity profile | Not started |
+| Surface hydrophobic patches | 2 | CamSol structure-corrected mode | Not started |
+| Predicted intrinsic solubility | 1 | CamSol Intrinsic | Not started |
+| Structure-corrected solubility | 2 | CamSol structure-corrected mode | Not started |
+| Aggregation propensity | 1 + 2 | AGGRESCAN3D for structures; CamSol; sequence-based aggregation predictors | Not started |
+| Instability index | 1 | ProtParam; `peptides.py` | Not started |
+| Aliphatic index | 1 | ProtParam; `peptides.py` | Not started |
+| Aromatic residue content (F, W, Y) | 1 | ProtParam; `peptides.py`; structure viewer for exposure context | Not started |
+| Cysteine number and arrangement | 1 + 2 | ProtParam; sequence inspection; structure prediction | Not started |
+| Secondary-structure percentages | 2 | `mkdssp` | Not started |
+| Solvent-accessible surface area (SASA) | 2 | `mkdssp` / DSSP; FreeSASA; predicted structure | Not started |
+| Structural confidence and disorder | 2 | AlphaFold confidence metrics | Not started |
+| Sequence complexity and low-complexity regions | 1 | `peptides.py` sequence statistics; SEG or equivalent | Not started |
+| Extinction coefficient at 280 nm | 1 | ProtParam | Not started |
+
+CamSol Intrinsic is sequence-based and a separate tool; check availability and access before use. The official [CamSol site](https://www-cohsoftware.ch.cam.ac.uk/) provides a web service after registration. Public information does not clearly confirm a standalone command-line release for CamSol Intrinsic. The combined cysteine and aggregation rows use tier `1 + 2` because their TSV tool suggestions include both sequence-only and structure-dependent analyses.
+
+```mermaid
+flowchart LR
+  A["Tier 1<br/>sequence-only properties"] --> C["physchem_summary.csv"]
+  B["Tier 2<br/>structure-dependent properties"] --> C
+  classDef planned fill:#eeeeee,stroke:#777,color:#111;
+  class A,B,C planned;
+```
+
+All nodes are grey because this track has not started.
 
 ## Environment summary
 
@@ -74,7 +106,8 @@ See [ENVIRONMENT.md](ENVIRONMENT.md) for paths and the complete read-only check 
 - `scripts/` — original analysis scripts plus local helper/wrapper scripts.
 - `pdbbind/` — locally supplied PDBBind structures and indexes; excluded from Git.
 - `alphafold3_server/` — input sequences, job files, chain mapping, metadata and prediction staging.
-- `pilot10/` — pilot selection and run notes.
+- `bench20/` — 20-complex selection, baseline and run notes.
+- `archive/` — superseded pilot10 run (10 complexes, never submitted) and earlier Phase A drafts; do not submit these jobs.
 - `ALPHAFOLD_SERVER.md` — manual Server submission and download workflow.
 - `ENVIRONMENT.md` — current setup checks and status.
 - `CHANGES.md` — script diff against the original scripts commit and additional files.
@@ -87,17 +120,17 @@ See [ENVIRONMENT.md](ENVIRONMENT.md) for paths and the complete read-only check 
 
 - PLIP, Open Babel, Prodigy, DockQ and the requested Python packages are available in their Conda environments.
 - The supplied static Rosetta executables and repository wrappers are present. The wrappers refer to static binary names rather than the requested `.default` names.
-- PDBBind and the 10-complex input files are present on this workstation.
+- PDBBind files and the 20-complex `bench20` input set are present on this workstation.
 
 ### Not tested yet
 
-- No end-to-end pipeline stage has been run on real data for this supervisor-facing status report.
-- AlphaFold Server prediction download, pTM/iPTM capture, model conversion, feature extraction, correlation analysis and DockQ comparison remain to be performed.
-- LASSO/Ridge/ElasticNet modeling, scaled model comparison and evaluation on 10 extra complexes are planned and not implemented.
+- The crystal PRODIGY baseline has run on 20 real PDBBind structures; no AF3-based or relaxed-model end-to-end stage has run.
+- AlphaFold Server prediction download, pTM/iPTM capture, model conversion, feature extraction, model comparison and DockQ comparison remain to be performed. The crystal PRODIGY rank correlations are rho = 0.0925 (Spearman) and tau = 0.0686 (Kendall).
+- LASSO/Ridge/ElasticNet modeling, scaled model comparison and evaluation on held-out complexes are planned and not implemented.
 
 ### Next steps
 
-1. Review `comp_list`, `clone_list`, `expt_kd.csv`, and `alphafold3_server/pilot10_chain_mapping.tsv`.
+1. Review `comp_list`, `clone_list`, `expt_kd.csv`, and `alphafold3_server/bench20_chain_mapping.tsv`.
 2. Submit the selected sequences through AlphaFold Server and download the five CIF models and confidence JSON files per complex.
 3. Confirm predicted chain IDs and mappings, then begin with a controlled real-data run.
 4. Implement the ML and extra-complex validation stages after feature tables are available.

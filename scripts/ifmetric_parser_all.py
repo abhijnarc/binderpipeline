@@ -6,7 +6,11 @@
 import pandas as pd
 import os
 
-PREFIX = os.environ.get("PREFIX", "pilot10")
+PREFIX = os.environ.get("PREFIX", "bench20")
+MODEL_COUNT = int(os.environ.get("MODEL_COUNT", "5"))
+if MODEL_COUNT not in range(1, 6):
+    raise SystemExit("MODEL_COUNT must be between 1 and 5")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def parse_interface_analyzer(compname, nmod):
     # make ifmetric file name
@@ -44,7 +48,7 @@ def parse_interface_analyzer(compname, nmod):
 if __name__ == "__main__":
 
     # complex list file name
-    comp_file = os.environ.get("COMP_LIST", "../../comp_list")
+    comp_file = os.environ.get("COMP_LIST", os.path.join(ROOT, "comp_list"))
 
     # empty lists for IF metric
     ifmetric_list = []
@@ -55,8 +59,8 @@ if __name__ == "__main__":
     
     # run a loop over the complexes
     for compname in comp_list:
-        # nested loop over 5 AF3 run configs
-        for ncon in range(5):
+        # nested loop over MODEL_COUNT AF3 run configs
+        for ncon in range(MODEL_COUNT):
             ifmetric = parse_interface_analyzer(compname, str(ncon))
 
             # append the dataframes to lists

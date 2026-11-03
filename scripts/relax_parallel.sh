@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Inputs are the five PDBs converted from original AlphaFold Server CIFs:
 # <AF3_MODEL_DIR>/<complex>_<0..4>.pdb. Outputs retain *_0002.pdb names.
 ROSETTA_RELAX=/home/wetlab/tools/rosetta.binary.ubuntu.release-408/main/source/build/src/release/linux/5.4/64/x86/gcc/7/static/relax.static.linuxgccrelease
 ROSETTA_DB=/home/wetlab/tools/rosetta.binary.ubuntu.release-408/main/database
-AF3_MODEL_DIR=${AF3_MODEL_DIR:-../AF3/AF3_models}
-CLONE_LIST=${CLONE_LIST:-../clone_list}
+AF3_MODEL_DIR=${AF3_MODEL_DIR:-$PROJECT_ROOT/alphafold3_server/predictions/AF3_models}
+CLONE_LIST=${CLONE_LIST:-$PROJECT_ROOT/clone_list}
 MODEL_COUNT=${MODEL_COUNT:-5}
 
 if (($#)); then

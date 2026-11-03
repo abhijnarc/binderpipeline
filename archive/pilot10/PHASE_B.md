@@ -1,5 +1,7 @@
 # Phase B handoff: AlphaFold Server downloads
 
+> **Superseded (archived).** This 10-complex pilot was replaced by `bench20/` and its AF3 jobs were never submitted. Paths below refer to the pre-archive layout: the jobs, FASTA, mapping and tables now live in `archive/pilot10/`, and root `comp_list`/`clone_list`/`expt_kd.csv` now hold the bench20 set. Do not follow these instructions.
+
 Phase B is paused until the ten result archives are downloaded and the user explicitly asks to resume. No AlphaFold Server jobs have been submitted by this workflow.
 
 ## Before submission

@@ -8,7 +8,11 @@ from collections import defaultdict
 import glob
 import os
 
-PREFIX = os.environ.get("PREFIX", "pilot10")
+PREFIX = os.environ.get("PREFIX", "bench20")
+MODEL_COUNT = int(os.environ.get("MODEL_COUNT", "5"))
+if MODEL_COUNT not in range(1, 6):
+    raise SystemExit("MODEL_COUNT must be between 1 and 5")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INTERACTION_TYPES = ("HydrogenBond", "Hydrophobic", "SaltBridge", "PiStack")
 INTERACTION_COLUMNS = (
     "interaction", "protein_chain", "protein_residue", "protein_resnr",
@@ -147,6 +151,10 @@ def parse_plip_xml(xmlfile):
     ######################################################################
 
     df = pd.DataFrame(interactions, columns=INTERACTION_COLUMNS)
+    # The requested partner interface is exclusively chain A <-> chain B.
+    if not df.empty:
+        df = df[((df["protein_chain"] == "A") & (df["ligand_chain"] == "B")) |
+                ((df["protein_chain"] == "B") & (df["ligand_chain"] == "A"))].copy()
 
     ######################################################################
     # Summary
@@ -177,7 +185,7 @@ def parse_plip_xml(xmlfile):
 if __name__ == "__main__":
 
     # complex list file name
-    comp_file = os.environ.get("COMP_LIST", "../../comp_list")
+    comp_file = os.environ.get("COMP_LIST", os.path.join(ROOT, "comp_list"))
 
     # empty lists for interactions and summary
     interactions_list = []
@@ -189,8 +197,8 @@ if __name__ == "__main__":
     
     # run a loop over the complexes
     for compname in comp_list:
-        # nested loop over 5 AF3 run configs
-        for ncon in range(5):
+        # nested loop over MODEL_COUNT AF3 run configs
+        for ncon in range(MODEL_COUNT):
             # make xml file name
             xmlf = compname + '_' + str(ncon) + '.xml'
             print(f"Analyzing {xmlf} ....")
@@ -206,8 +214,8 @@ if __name__ == "__main__":
             summary_list.append(summary)
 
     # convert the list to dataframes
-    interactions_df = pd.concat(interactions_list, ignore_index=True) 
-    summary_df = pd.concat(summary_list, ignore_index=True) 
+    interactions_df = pd.concat(interactions_list, ignore_index=True) if interactions_list else pd.DataFrame(columns=["complex", "nconf", *INTERACTION_COLUMNS])
+    summary_df = pd.concat(summary_list, ignore_index=True) if summary_list else pd.DataFrame(columns=["complex", "nconf", "protein_chain", "interaction", "count"])
 
     # save the df's to csv
     interactions_path = f"{PREFIX}_interactions.csv"

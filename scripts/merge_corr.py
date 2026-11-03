@@ -8,8 +8,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import kendalltau, spearmanr
 
-PREFIX = os.environ.get("PREFIX", "pilot10")
-EXPT_FILE = os.environ.get("EXPT_FILE", "expt_kd.csv")
+PREFIX = os.environ.get("PREFIX", "bench20")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+EXPT_FILE = os.environ.get("EXPT_FILE", os.path.join(ROOT, "expt_kd.csv"))
 INTF_FILE = os.environ.get("INTF_FILE", f"{PREFIX}_interaction_scores_entropy.csv")
 IFM_FILE = os.environ.get("IFM_FILE", f"{PREFIX}_ifmetric_summary.csv")
 PROD_FILE = os.environ.get("PROD_FILE", f"{PREFIX}_prodigy.csv")

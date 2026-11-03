@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 
-PREFIX = os.environ.get("PREFIX", "pilot10")
+PREFIX = os.environ.get("PREFIX", "bench20")
 
 # Load input file
 df = pd.read_csv(f"{PREFIX}_ifmetric.csv")
