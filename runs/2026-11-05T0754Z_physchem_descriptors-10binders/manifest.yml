@@ -1,0 +1,71 @@
+run_id: 2026-11-05T0754Z_physchem_descriptors-10binders
+timestamp_utc: '2026-11-05T07:54:22Z'
+track: physchem
+stage: characterisation
+description: Sequence-only physicochemical descriptors for all 10 OPMD binder sequences,
+  two construct forms each. Re-executed after the curated dataset moved to data/;
+  numbers are unchanged from the superseded run.
+status: ok
+inputs:
+- path: data/opmd_binders_clean.csv
+  sha256: d08115c5353c948dfb3d62fb6ff919461e9a88f33edca616e524c32e9c04286d
+  bytes: 3896
+- path: physchem/physchem_props.py
+  sha256: c3be62619f560172a3eab7c89bb6e7a00d1d2fc61414c7a1f6bc64e644d8e9a3
+  bytes: 16959
+- path: physchem/run_physchem.py
+  sha256: 94b49e21b7020f8ea1dda7aaf92f1ee98a2ec54fce48fbf82825da888ce10f54
+  bytes: 11162
+outputs:
+- path: physchem_properties.tsv
+  description: Main property table, 20 rows by 65 columns
+- path: physchem_provenance.txt
+  description: Tool versions, run date and exact parameters
+- path: rejected_sequences.tsv
+  description: Validation failures, empty - all 10 passed
+- path: README.md
+  description: Column dictionary and descriptor-not-prediction caveats
+tool_versions:
+  python: 3.14.7
+  biopython: '1.88'
+  peptides: 0.5.0
+  pandas: 3.0.6
+  numpy: 2.5.3
+  scipy: 1.18.1
+  pyyaml: 6.0.3
+  matplotlib: 3.11.2
+  quarto: 1.11.9
+code_version: 83d0ed1dc230cd9c82d30d5f60d6f14446164d3a
+parameters:
+  net_charge_ph_values:
+  - 7.0
+  - 8.0
+  hydrophobicity_scale: Kyte-Doolittle
+  sliding_window_residues: 9
+  hydrophobic_residue_set: AVILMFWYC
+  charged_residue_set: DEKR
+  aromatic_residues: FWY
+  pka_table: Bio.SeqUtils.IsoelectricPoint Bjellqvist/EMBOSS
+  entropy_log_base: 2
+  float_rounding_decimals: 4
+  nterm_leaders_stripped:
+  - MGSS
+  - MGS
+  - M
+  his_tag_min_run: 6
+  gs_linker_min_length: 3
+  min_length_after_stripping: 5
+  binders: 10
+  rows_emitted: 20
+  rejected: 0
+  smoke_test_checks_passed: 66
+supersedes: 2026-11-05T0749Z_physchem_descriptors-10binders
+backfilled: false
+notes: Supersedes the 0749Z run solely because the input dataset moved from physchem/data/
+  to data/; the computed numbers are byte-identical. Internal GGGGS linkers in IL10NB5
+  (VH-linker-VH) are structural and deliberately not stripped. LCN2_B1 carries CONFLICT
+  sentinels in host_strain and iptg_mM from disagreeing source sheets, carried through
+  verbatim. Stripping IL10NB1's His tag moves its pI from 6.63 to 5.09, so cross-binder
+  comparison should use tag_stripped rows. No correlations or p-values against outcome
+  columns were computed; 10 binders with 2 non-expressers cannot support them.
+code_version_dirty: true

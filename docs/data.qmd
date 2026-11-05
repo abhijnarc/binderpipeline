@@ -1,0 +1,249 @@
+---
+title: "Datasets"
+subtitle: "What each dataset is, where it came from, and what is wrong with it"
+---
+
+```{python}
+#| echo: false
+import sys, pathlib
+for candidate in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]:
+    if (candidate / "_helpers" / "load_runs.py").exists():
+        sys.path.insert(0, str(candidate / "_helpers"))
+        break
+from IPython.display import Markdown
+import pandas as pd
+import load_runs as lr
+
+ROOT = lr.ROOT
+CHAR = lr.latest("physchem", "characterisation")
+SELECTION = "2026-10-30T0000Z_interface-kd_complex-selection"
+AF3 = "2026-11-03T0000Z_interface-kd_af3-predictions"
+```
+
+Defects are stated plainly here rather than softened. A dataset's known
+problems are the first thing a reader needs, because they bound what any
+result computed from it can mean.
+
+## OPMD binder sequences
+
+```{python}
+#| echo: false
+binders = pd.read_csv(ROOT / "data" / "opmd_binders_clean.csv", dtype=str,
+                      keep_default_na=False)
+m = lr.manifest(CHAR)
+rec = next((i for i in m["inputs"]
+            if i["path"].endswith("opmd_binders_clean.csv")), None)
+Markdown(
+    f"`data/opmd_binders_clean.csv` — **{len(binders)} binders** against "
+    f"{binders.target.nunique()} targets "
+    f"({', '.join(sorted(binders.target.unique()))}), "
+    f"{len(binders.columns)} columns.\n\n"
+    f"In-house wet-lab records, consolidated from three source spreadsheets "
+    f"(a decision tree, 'Sheet4', and a marker tracker) into one row per "
+    f"binder, with sequences, expression conditions and outcomes. Consumed "
+    f"by the physicochemical track {lr.cite(CHAR)}; recorded there at "
+    f"SHA-256 `{rec['sha256'][:16]}…`, {rec['bytes']} bytes."
+)
+```
+
+```{python}
+#| echo: false
+binders[["binder_id", "target", "sequence_length", "has_his_tag",
+         "expression", "soluble_fraction", "elisa_result",
+         "data_quality_flag"]]
+```
+
+### Known defects
+
+```{python}
+#| echo: false
+conflict = binders[binders.apply(
+    lambda r: any(v == "CONFLICT" for v in r.values), axis=1)]
+flagged = binders[binders.data_quality_flag != "ok"]
+multi = binders[binders.multiple_conditions_tested == "TRUE"]
+no_expr = binders[binders.expressed_binary == "0"]
+pellet = binders[(binders.soluble_binary == "0")
+                 & (binders.expressed_binary == "1")]
+Markdown(
+    f"**Far too small for supervised learning.** {len(binders)} binders with "
+    f"{len(no_expr)} non-expressers and {len(pellet)} insoluble cases. This "
+    f"cannot support training on embeddings or on anything else; see the "
+    f"[open question](decisions.qmd#labelled-data).\n\n"
+    f"**Unresolved source conflict in "
+    f"{', '.join(conflict.binder_id)}.** "
+    f"The source sheets disagree on host strain and IPTG concentration "
+    f"(decision tree: BL21 with 0.5 mM; marker tracker: Rosetta with "
+    f"0.3 mM). Both fields carry the literal value `CONFLICT`. No value is "
+    f"imputed, and the physicochemical pipeline reads all metadata as text "
+    f"so the sentinel cannot corrupt numeric parsing of other rows. "
+    f"Temperature and duration do agree. "
+    f"[Open question](decisions.qmd#lcn2-conditions).\n\n"
+    f"**Rows carrying a data-quality flag: {len(flagged)}.**"
+)
+```
+
+```{python}
+#| echo: false
+flagged[["binder_id", "data_quality_flag", "notes"]]
+```
+
+```{python}
+#| echo: false
+Markdown(
+    f"**Experimental conditions are not uniform.** {len(multi)} of "
+    f"{len(binders)} binders were tested under multiple conditions, recorded "
+    f"as multi-valued text (for example `temperature_C` = `37; 30`, "
+    f"`iptg_mM` = `0.3; 0.5; 1.0`). A binder that failed at one condition is "
+    f"not comparable to one that succeeded at another, and the table does "
+    f"not record which condition produced the reported outcome.\n\n"
+    f"**Outcome labels are partly subjective.** `expression` and "
+    f"`soluble_fraction` derive from gel inspection. One binder's faint band "
+    f"prompted a western blot that came back negative, so the numeric label "
+    f"and the visual impression disagree. ELISA results include `pending` "
+    f"and `NA`.\n\n"
+    f"**Two sequences were repaired during cleaning.** MMP9B17's sequence was "
+    f"reconstructed by removing five spurious hyphens present in one source "
+    f"copy; removing them reproduces the other sheet's sequence exactly. "
+    f"IL10R2's name carried a stray backtick. Both are recorded in `notes`.\n\n"
+    f"**Mixed construct classes.** The set contains de-novo helical designs "
+    f"and antibody-derived VH / VH-linker-VH nanobody formats. These differ "
+    f"systematically in length, charge and composition, so any apparent "
+    f"grouping by outcome is confounded with format."
+)
+```
+
+Validation is applied on read rather than assumed: standard amino acids only,
+and the declared `sequence_length` must match the real length. All
+{python} f"{len(binders)}" rows currently pass.
+
+## bench20 complex selection
+
+```{python}
+#| echo: false
+sel = lr.read_output(SELECTION, "selection.tsv")
+s = lr.params(SELECTION)
+Markdown(
+    f"`bench20/selection.tsv` — **{len(sel)} two-chain protein–protein "
+    f"complexes** drawn from the local PDBBind general protein–protein set "
+    f"{lr.cite(SELECTION)}. X-ray only, each chain over "
+    f"{s['min_chain_length_aa']} residues, exact Kd (not an inequality), "
+    f"selection seed `{s['selection_seed']}`.\n\n"
+    f"Resolution {sel.resolution.astype(float).min():.2f}–"
+    f"{sel.resolution.astype(float).max():.2f} Å; deposition years "
+    f"{int(sel.year.astype(float).min())}–"
+    f"{int(sel.year.astype(float).max())}."
+)
+```
+
+```{python}
+#| echo: false
+sel[["id", "chain1", "chain2", "len1", "len2", "resolution", "year", "Kd",
+     "log10_Kd"]]
+```
+
+### Known defects
+
+```{python}
+#| echo: false
+a = lr.params(AF3)
+span = abs(lr.num(SELECTION, "log10_kd_max") - lr.num(SELECTION, "log10_kd_min"))
+kd_min, kd_max = lr.num(SELECTION, "kd_m_min"), lr.num(SELECTION, "kd_m_max")
+Markdown(
+    f"**The Kd range is indefensibly wide for a benchmark of this size.** "
+    f"{kd_min:.0e} M to {kd_max:.0e} M — about {span:.0f} "
+    f"orders of magnitude across {len(sel)} complexes, assembled from "
+    f"different publications using different assay types (SPR, ITC, "
+    f"inhibition constants and others). A rank correlation over this set is "
+    f"partly measuring agreement between heterogeneous experiments. "
+    f"[Open question](decisions.qmd#pdbbind-recuration).\n\n"
+    f"**{a['chains_with_extra_residues']} of {a['chains_total']} chains have "
+    f"SEQRES/ATOM length differences**, meaning the submitted sequence "
+    f"contains residues that are absent from the crystal structure — up to "
+    f"{a['max_extra_residues']} extra residues in "
+    f"{a['max_extra_residues_complex']}. Predictions and reference "
+    f"structures are therefore not models of identical molecules, which puts "
+    f"a floor under achievable DockQ for those cases.\n\n"
+    f"**Kd values are inherited from PDBBind annotations**, not re-read from "
+    f"the primary literature. Index parent-publication references were "
+    f"checked for uniqueness, but the measurements themselves were not "
+    f"independently verified.\n\n"
+    f"**One self-template.** 3w8h's own PDB entry appeared among its "
+    f"AlphaFold template hits (single-chain templates), so its prediction is "
+    f"not fully blind."
+)
+```
+
+## AlphaFold predictions and derived structures
+
+```{python}
+#| echo: false
+conf = lr.read_output(AF3, "af3_confidence.tsv")
+Markdown(
+    f"`alphafold3_server/metadata/af3_confidence.tsv` — per-model pTM, ipTM "
+    f"and ranking score for **{len(conf)} models** "
+    f"({conf.complex_id.nunique()} complexes x "
+    f"{conf.model_index.nunique()} models) {lr.cite(AF3)}. ipTM "
+    f"{conf.iptm.min()}–{conf.iptm.max()}.\n\n"
+    f"**The `server_job_id` column is empty**: the AlphaFold Server "
+    f"downloads do not include job identifiers, so individual predictions "
+    f"cannot be traced back to their submissions. Provenance stops at the "
+    f"job request files.\n\n"
+    f"**Terms of use are unresolved** and block publication of anything "
+    f"derived from these predictions. "
+    f"[Open question](decisions.qmd#alphafold-terms)."
+)
+```
+
+Large artefacts are deliberately **not** stored in `runs/` or served by this
+site. They are recorded in the relevant manifest by path, hash and size, and
+left where they live:
+
+```{python}
+#| echo: false
+rows = []
+for run in lr.load_runs().itertuples():
+    for art in (lr.manifest(run.run_id).get("external_artefacts") or []):
+        rows.append({"run": run.run_id, "path": art["path"],
+                     "bytes": art.get("bytes"),
+                     "description": art.get("description", "")})
+ext = pd.DataFrame(rows)
+if ext.empty:
+    Markdown("_No external artefacts recorded._")
+else:
+    ext
+```
+
+```{python}
+#| echo: false
+Markdown(
+    "Also on local disk and not in the site: `alphafold3_server/predictions/` "
+    "(about 709 MB of CIF and converted PDB models) and `bench20/work/` "
+    "(about 197 MB of relaxed structures, Rosetta score files and PLIP XML). "
+    "`pdbbind/` holds 2,798 supplied complex structures and is git-ignored. "
+    "These must be present locally to re-execute the interface track; the "
+    "site records only their location and the summary tables derived from "
+    "them."
+)
+```
+
+## Dataset provenance summary
+
+```{python}
+#| echo: false
+rows = []
+for run in lr.load_runs().itertuples():
+    for inp in (lr.manifest(run.run_id).get("inputs") or []):
+        rows.append({
+            "dataset": inp["path"],
+            "consumed by": run.run_id,
+            "sha256": inp["sha256"][:12] + "…",
+            "bytes": inp["bytes"],
+        })
+prov = pd.DataFrame(rows).sort_values(["dataset", "consumed by"])
+prov.reset_index(drop=True)
+```
+
+Every input is hashed at the moment it is consumed. `check_runs.py` re-hashes
+them and reports any whose source file has since changed, so a result computed
+from a stale version of a dataset is visible as such rather than silently
+wrong.

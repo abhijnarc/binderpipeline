@@ -1,0 +1,106 @@
+---
+title: "Runs"
+subtitle: "Every pipeline execution, newest first"
+---
+
+```{python}
+#| echo: false
+import sys, pathlib
+for candidate in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]:
+    if (candidate / "_helpers" / "load_runs.py").exists():
+        sys.path.insert(0, str(candidate / "_helpers"))
+        break
+from IPython.display import Markdown
+import load_runs as lr
+
+runs = lr.load_runs()
+```
+
+Each row is an immutable directory under `runs/`, holding the output files and
+a `manifest.yml` recording inputs with their SHA-256 hashes, tool versions,
+the git commit, and the actual parameter values used. Nothing on this page is
+hand-typed: it is generated from those manifests.
+
+A **superseded** run is struck through and names its replacement. It is kept,
+not deleted — the lineage of a corrected result is part of the record.
+**Backfilled** marks numbers transcribed from an earlier report rather than
+produced by executing code; those are not reproducible from this site.
+
+```{python}
+#| echo: false
+total = len(runs)
+live = int((~runs.is_superseded).sum())
+backfilled = int(runs.backfilled.sum())
+tracks = lr.counts_by(runs, "track")
+statuses = lr.counts_by(runs, "status")
+Markdown(
+    f"**{total} runs** — {live} current, {total - live} superseded; "
+    f"{backfilled} backfilled, {total - backfilled} executed. "
+    f"By track: " + ", ".join(f"{k} {v}" for k, v in sorted(tracks.items()))
+    + ". By status: " + ", ".join(f"{k} {v}" for k, v in sorted(statuses.items()))
+    + "."
+)
+```
+
+## All runs
+
+```{python}
+#| echo: false
+Markdown(lr.runs_table(runs))
+```
+
+## By track
+
+```{python}
+#| echo: false
+blocks = []
+for track in sorted(runs.track.unique()):
+    subset = runs[runs.track == track]
+    blocks.append(f"### {lr.TRACK_LABELS.get(track, track)}\n")
+    blocks.append(lr.runs_table(subset))
+    blocks.append("")
+Markdown("\n".join(blocks))
+```
+
+## Runs needing attention
+
+```{python}
+#| echo: false
+flagged = runs[(runs.status != "ok") | runs.backfilled | runs.code_version.isna()]
+if flagged.empty:
+    out = "_Nothing flagged._"
+else:
+    lines = []
+    for row in flagged.itertuples():
+        reasons = []
+        if row.status != "ok":
+            reasons.append(f"status **{row.status}**")
+        if row.backfilled:
+            reasons.append("**backfilled** (not reproducible here)")
+        if row.code_version is None or (isinstance(row.code_version, float)):
+            reasons.append("no `code_version` — producing code unidentified")
+        lines.append(
+            f"- {lr.run_link(row.run_id)} — {', '.join(reasons)}"
+            + (f"<br/>{row.notes}" if row.notes else "")
+        )
+    out = "\n".join(lines)
+Markdown(out)
+```
+
+## Validating the record
+
+`check_runs.py` at the repository root validates every manifest against the
+required fields, confirms each listed output exists, re-hashes every recorded
+input to detect results computed from a since-changed dataset, and checks
+supersession consistency. Run it before every render:
+
+```bash
+python3 check_runs.py            # errors exit 1
+python3 check_runs.py --strict   # warnings also exit 1
+```
+
+Add a run with `new_run.py`, which captures tool versions, the git SHA and
+input hashes automatically. It refuses to copy large or binary artefacts into
+`runs/` — those are recorded by path and hash and left where they live — and
+refuses to re-run an existing track/stage/slug unless you say what it
+supersedes.

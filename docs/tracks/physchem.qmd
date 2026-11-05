@@ -1,0 +1,320 @@
+---
+title: "Physicochemical characterisation"
+subtitle: "Sequence-only descriptors for in-house binder designs"
+---
+
+```{python}
+#| echo: false
+import sys, pathlib
+for candidate in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]:
+    if (candidate / "_helpers" / "load_runs.py").exists():
+        sys.path.insert(0, str(candidate / "_helpers"))
+        break
+from IPython.display import Markdown
+import pandas as pd
+import load_runs as lr
+
+P = "../"
+SMOKE = lr.latest("physchem", "smoke-test")
+CHAR = lr.latest("physchem", "characterisation")
+props = lr.read_output(CHAR, "physchem_properties.tsv")
+p = lr.params(CHAR)
+stripped = props[props.construct_form == "tag_stripped"].set_index("binder_id")
+as_given = props[props.construct_form == "as_given"].set_index("binder_id")
+```
+
+::: {.caveat}
+**These are descriptors, not predictions.** Nothing in this track is fitted,
+trained, or correlated against the experimental outcome columns. The
+experimental metadata travels alongside the descriptors so a human can look at
+both; no relationship between them is computed or implied. Several of these
+descriptors — the instability and aliphatic indices especially — are
+literature heuristics with weak, context-dependent relevance to recombinant
+expression in *E. coli*, and are not quality scores.
+:::
+
+## What this computes
+
+```{python}
+#| echo: false
+Markdown(
+    f"Sequence-only properties for each binder {lr.cite(CHAR, P)}: length, "
+    f"molecular weight, pI, net charge at pH "
+    f"{' and '.join(str(v) for v in p['net_charge_ph_values'])}, GRAVY, "
+    f"instability and aliphatic indices, aromaticity with explicit F/W/Y "
+    f"counts, cysteine count and parity, the full 20-residue composition as "
+    f"percentages, charged fraction over {p['charged_residue_set']}, reduced "
+    f"and oxidised extinction coefficients at 280 nm, Shannon entropy of "
+    f"composition (base {p['entropy_log_base']}), longest run of "
+    f"{p['hydrophobic_residue_set']}, and the maximum mean "
+    f"{p['hydrophobicity_scale']} hydropathy over a "
+    f"{p['sliding_window_residues']}-residue window with its position.\n\n"
+    f"{len(props.columns)} columns, {len(props)} rows: "
+    f"{p['binders']} binders x {props.construct_form.nunique()} construct "
+    f"forms. {p['rejected']} sequences rejected on validation."
+)
+```
+
+A structural tier (SASA, secondary structure, structure-corrected solubility)
+and an ESM2 embedding tier are planned as additional stages contributing their
+own columns to the same table. Neither is implemented. The embedding tier is
+blocked on a [decision about its role](../decisions.qmd#esm2-role).
+
+## Verification before use
+
+```{python}
+#| echo: false
+sp = lr.params(SMOKE)
+Markdown(
+    f"The implementation was checked against independently known values "
+    f"before it was run on real sequences {lr.cite(SMOKE, P)}: "
+    f"**{sp['checks_run']} checks, {sp['checks_failed']} failures**.\n\n"
+    f"| Quantity | Published (ProtParam) | Computed | Tolerance |\n"
+    f"|---|---|---|---|\n"
+    f"| Molecular weight | {sp['expected_mw_da']} Da | 8564.7357 Da | "
+    f"±{sp['mw_tolerance_da']} |\n"
+    f"| Isoelectric point | {sp['expected_pi']} | 6.5616 | "
+    f"±{sp['pi_tolerance_ph']} |\n"
+    f"| Extinction at 280 nm | {sp['expected_ext280']} M⁻¹cm⁻¹ | "
+    f"{sp['expected_ext280']} M⁻¹cm⁻¹ | exact |\n\n"
+    f"Reference protein: {sp['reference_protein']}. Edge cases covered a "
+    f"5-residue peptide, zero-cysteine and zero-aromatic sequences "
+    f"(extinction coefficient must be exactly 0), an all-alanine sequence, "
+    f"and rejection of sequences containing X or a hyphen. The pI tolerance "
+    f"is 0.2 pH units because Biopython's pKa table differs slightly from "
+    f"the ExPASy web implementation."
+)
+```
+
+## Tag handling, and why there are two rows per binder
+
+```{python}
+#| echo: false
+changed = stripped[stripped.stripped_elements != "none"]
+Markdown(
+    f"Purification tags and expression leaders change every number above, "
+    f"and this set mixes tagged and untagged constructs. Each binder "
+    f"therefore appears twice: `as_given` and `tag_stripped`. Stripping "
+    f"removes a terminal run of ≥ {p['his_tag_min_run']} H at either "
+    f"terminus, a leading {p['nterm_leaders_stripped']} leader (longest "
+    f"match first), and a GS-rich linker of ≥ {p['gs_linker_min_length']} "
+    f"residues **only** where directly adjacent to a removed tag. "
+    f"{len(changed)} of {len(stripped)} binders had something removed."
+)
+```
+
+```{python}
+#| echo: false
+changed[["stripped_elements", "length"]].join(
+    as_given[["length"]], rsuffix="_as_given"
+).rename(columns={"length": "length_stripped",
+                  "length_as_given": "length_as_given"})[
+    ["length_as_given", "length_stripped", "stripped_elements"]
+]
+```
+
+```{python}
+#| echo: false
+pair = pd.DataFrame({
+    "pI_as_given": as_given.isoelectric_point,
+    "pI_tag_stripped": stripped.isoelectric_point,
+}).assign(change=lambda d: d.pI_tag_stripped - d.pI_as_given)
+worst = pair.change.abs().idxmax()
+Markdown(
+    f"This is not cosmetic. Stripping **{worst}**'s C-terminal His tag moves "
+    f"its pI from {pair.loc[worst, 'pI_as_given']:.2f} to "
+    f"{pair.loc[worst, 'pI_tag_stripped']:.2f} — six histidines are a real "
+    f"titratable group near neutral pH. **Cross-binder comparisons should "
+    f"use the `tag_stripped` rows**; `as_given` describes the protein that "
+    f"was actually expressed."
+)
+```
+
+```{python}
+#| echo: false
+pair.round(3)
+```
+
+```{python}
+#| echo: false
+nb5 = stripped.loc["IL10NB5"]
+Markdown(
+    f"**IL10NB5 is deliberately left intact.** It is a VH-linker-VH "
+    f"construct whose two domains are joined by GGGGS repeats; those are "
+    f"structural, not tags, and are retained "
+    f"(`stripped_elements` = `{nb5.stripped_elements}`, length "
+    f"{nb5.length}). The smoke test covers this case, along with a sequence "
+    f"whose own composition contains HH and an internal HHHHHH that is not "
+    f"a tag."
+)
+```
+
+## The 10 binders
+
+```{python}
+#| echo: false
+keys = ["length", "molecular_weight", "isoelectric_point", "net_charge_pH7",
+        "gravy", "instability_index", "aliphatic_index", "aromaticity",
+        "cys_count", "fraction_charged_DEKR", "ext_coeff_280_reduced",
+        "shannon_entropy_bits", "longest_hydrophobic_run",
+        "max_mean_hydropathy_w9"]
+stripped[keys].round(3)
+```
+
+```{python}
+#| echo: false
+ranges = stripped[[k for k in keys]].agg(["min", "median", "max"]).T.round(3)
+Markdown(f"Ranges across the {len(stripped)} binders (`tag_stripped`):")
+ranges
+```
+
+### Which binders are unusual, and on what
+
+```{python}
+#| echo: false
+basic = stripped.isoelectric_point.idxmax()
+most_cys = stripped.cys_count.idxmax()
+low_arom = stripped.aromaticity.idxmin()
+unstable = stripped.instability_index.idxmax()
+Markdown(
+    f"- **{basic}** is the only basic construct (pI "
+    f"{stripped.loc[basic, 'isoelectric_point']:.2f}, net charge "
+    f"{stripped.loc[basic, 'net_charge_pH7']:+.1f} at pH 7), the only one "
+    f"with substantial cysteine ({int(stripped.loc[most_cys, 'cys_count'])}), "
+    f"and has the highest window hydropathy "
+    f"({stripped.loc[basic, 'max_mean_hydropathy_w9']:.2f}) and entropy "
+    f"({stripped.loc[basic, 'shannon_entropy_bits']:.2f} bits).\n"
+    f"- **IL10NB1 and IL10NB5**, the two nanobody-format constructs, sit "
+    f"apart from the designed helical binders on nearly everything: charged "
+    f"fraction {stripped.loc['IL10NB5', 'fraction_charged_DEKR']:.2f}–"
+    f"{stripped.loc['IL10NB1', 'fraction_charged_DEKR']:.2f} against "
+    f"{stripped.drop(['IL10NB1', 'IL10NB5']).fraction_charged_DEKR.min():.2f}–"
+    f"{stripped.drop(['IL10NB1', 'IL10NB5']).fraction_charged_DEKR.max():.2f} "
+    f"for the rest, and GRAVY closest to zero.\n"
+    f"- **{low_arom}** has the lowest aromaticity "
+    f"({stripped.loc[low_arom, 'aromaticity']:.4f}) and an extinction "
+    f"coefficient of only "
+    f"{int(stripped.loc[low_arom, 'ext_coeff_280_reduced'])} M⁻¹cm⁻¹ — one "
+    f"tyrosine, no tryptophan. Practically: A280 will quantify it poorly.\n"
+    f"- **{unstable}** has an instability index of "
+    f"{stripped.loc[unstable, 'instability_index']:.1f}, nearly double the "
+    f"median of {stripped.instability_index.median():.1f}.\n"
+    f"- All {len(stripped)} binders have an **even** cysteine count, and "
+    f"{int((stripped.cys_count == 0).sum())} have none at all. GRAVY is "
+    f"negative for every one, so all are net hydrophilic."
+)
+```
+
+## Descriptors against observed outcomes: a sanity check, not a result
+
+::: {.caveat}
+**This cannot be evidence.** 10 binders, with 2 non-expressers, 3 pellet and 5
+supernatant cases. No p-value or correlation coefficient against any outcome
+column has been computed, and none should be. What follows checks that the
+pipeline produces sane numbers and that the descriptors are not secretly
+encoding the answer.
+:::
+
+```{python}
+#| echo: false
+groups = {
+    "pellet (insoluble)": ["IL10NB5", "IL10NB1", "MMP9B7"],
+    "supernatant (soluble)": ["IL6AD15", "LCN2_B1", "LCN2_B5", "MMP9B9",
+                              "MMP9B17"],
+    "no expression": ["IL6P233", "IL10R2"],
+}
+show = ["fraction_charged_DEKR", "gravy", "instability_index",
+        "longest_hydrophobic_run", "length"]
+summary = pd.DataFrame({
+    f"{name} (n={len(ids)})": stripped.loc[ids, show].agg(
+        lambda col: f"{col.min():.2f} – {col.max():.2f}")
+    for name, ids in groups.items()
+})
+summary
+```
+
+```{python}
+#| echo: false
+pel = groups["pellet (insoluble)"]
+sup = groups["supernatant (soluble)"]
+Markdown(
+    f"The charged fraction and GRAVY ranges of the {len(pel)} pellet and "
+    f"{len(sup)} supernatant cases nearly touch but do not cleanly separate. "
+    f"Two of the three pellet cases are the nanobody-format IL10 constructs, "
+    f"which differ from the helical designs in format, length and origin — "
+    f"so the split is confounded with construct class, not just with these "
+    f"descriptors. The instability index runs **opposite** to the folklore, "
+    f"being lower in the insoluble group "
+    f"({stripped.loc[pel].instability_index.min():.1f}–"
+    f"{stripped.loc[pel].instability_index.max():.1f}) than in the soluble "
+    f"one ({stripped.loc[sup].instability_index.min():.1f}–"
+    f"{stripped.loc[sup].instability_index.max():.1f}). None of this is a "
+    f"signal."
+)
+```
+
+### IL6P233 versus IL6AD15
+
+```{python}
+#| echo: false
+a = stripped.loc["IL6P233", "sequence_analysed"]
+b = stripped.loc["IL6AD15", "sequence_analysed"]
+shared = a[-30:] == b[-30:]
+Markdown(
+    f"These two share their C-terminal 30 residues (verified identical from "
+    f"the sequences in the output table: **{shared}**) and differ across "
+    f"their N-terminal 60. IL6P233 did not express; IL6AD15 expressed and "
+    f"was mostly soluble. Both were tried at 37 °C, and the notes record no "
+    f"30 °C attempt for IL6P233."
+)
+```
+
+```{python}
+#| echo: false
+cmp_keys = ["length", "molecular_weight", "isoelectric_point",
+            "net_charge_pH7", "net_charge_pH8", "gravy", "instability_index",
+            "aliphatic_index", "aromaticity", "count_Y",
+            "ext_coeff_280_reduced", "longest_hydrophobic_run",
+            "shannon_entropy_bits", "fraction_charged_DEKR"]
+as_given.loc[["IL6P233", "IL6AD15"], cmp_keys].T.round(4)
+```
+
+```{python}
+#| echo: false
+ii_fail = as_given.loc["IL6P233", "instability_index"]
+ii_ok = as_given.loc["IL6AD15", "instability_index"]
+ai_fail = as_given.loc["IL6P233", "aliphatic_index"]
+ai_ok = as_given.loc["IL6AD15", "aliphatic_index"]
+Markdown(
+    f"They are near-identical on pI, net charge and hydropathy. The "
+    f"differences are small and mostly point the **wrong way**: the binder "
+    f"that *failed* to express has the lower instability index "
+    f"({ii_fail:.1f}, under the conventional threshold of 40) and the higher "
+    f"aliphatic index ({ai_fail:.1f} versus {ai_ok:.1f}), while the one that "
+    f"expressed scores {ii_ok:.1f}.\n\n"
+    f"**No computed descriptor here explains the difference in outcome.** "
+    f"For a pipeline sanity check that is the useful answer: it says these "
+    f"descriptors are not covertly encoding the result, and it is consistent "
+    f"with the cause lying somewhere sequence-only descriptors cannot see — "
+    f"local folding, codon or mRNA effects, toxicity, or simply that only "
+    f"one induction temperature was tried."
+)
+```
+
+```{python}
+#| echo: false
+pct = [c for c in props.columns if c.startswith("pct_")]
+comp = stripped.loc[["IL6P233", "IL6AD15"], pct].T
+comp = comp[(comp.T != 0).any()]
+comp["difference"] = (comp.IL6AD15 - comp.IL6P233).round(2)
+Markdown("Composition differences (percent of residues):")
+comp.round(2)
+```
+
+## Runs behind this page
+
+```{python}
+#| echo: false
+runs = lr.load_runs()
+Markdown(lr.runs_table(runs[runs.track == "physchem"], prefix=P))
+```

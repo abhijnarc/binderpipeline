@@ -1,0 +1,45 @@
+run_id: 2026-11-05T0749Z_physchem_smoketest
+timestamp_utc: '2026-11-05T07:49:08Z'
+track: physchem
+stage: smoke-test
+description: Smoke test of the sequence-only physicochemical descriptors against
+  published ProtParam values for bovine ubiquitin, plus edge cases and tag-stripping
+  logic. Run before the pipeline was allowed near real data.
+status: ok
+inputs:
+- path: physchem/physchem_props.py
+  sha256: c3be62619f560172a3eab7c89bb6e7a00d1d2fc61414c7a1f6bc64e644d8e9a3
+  bytes: 16959
+- path: physchem/test_physchem.py
+  sha256: 639dde7af81c32d4acfe21e7ab44660276039bb2fe3b6f5c3772e2276101af3e
+  bytes: 12662
+outputs:
+- path: smoke_test_output.txt
+  description: Full smoke-test console output, 66 checks
+tool_versions:
+  python: 3.14.7
+  biopython: '1.88'
+  peptides: 0.5.0
+  pandas: 3.0.6
+  numpy: 2.5.3
+  scipy: 1.18.1
+  pyyaml: 6.0.3
+  matplotlib: 3.11.2
+  quarto: 1.11.9
+code_version: 83d0ed1dc230cd9c82d30d5f60d6f14446164d3a
+parameters:
+  checks_run: 66
+  checks_failed: 0
+  reference_protein: bovine-ubiquitin-P0CG53-1-76
+  expected_mw_da: 8564.84
+  expected_pi: 6.56
+  expected_ext280: 1490
+  mw_tolerance_da: 0.5
+  pi_tolerance_ph: 0.2
+supersedes: null
+backfilled: false
+notes: 'Inputs listed are the module and test source, so a later code change shows
+  up as a stale input and invalidates this result. Observed: MW 8564.7357, pI 6.5616,
+  extinction 1490. Biopython pKa table differs slightly from the ExPASy web implementation,
+  hence the 0.2 pH tolerance on pI.'
+code_version_dirty: true

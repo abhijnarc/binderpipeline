@@ -1,0 +1,243 @@
+---
+title: "Decisions"
+subtitle: "Open questions, and a dated log of what has been settled"
+---
+
+```{python}
+#| echo: false
+import sys, pathlib
+for candidate in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]:
+    if (candidate / "_helpers" / "load_runs.py").exists():
+        sys.path.insert(0, str(candidate / "_helpers"))
+        break
+from IPython.display import Markdown
+import load_runs as lr
+```
+
+This page is **append-only**. A resolved entry is never deleted or edited into
+agreement with later thinking: it moves from the open section to the resolved
+log with its date and reasoning intact. Being able to see that a decision was
+made on the information available at the time is the point.
+
+# Open questions
+
+## AlphaFold Server terms of use {#alphafold-terms}
+
+**Question.** Do the AlphaFold Server terms of use permit publication of
+results derived from its predictions, and what is the long-term predictor?
+
+**Blocked by this.** Publication of the entire interface-parameter track,
+whatever the result turns out to be. Also the choice between continuing with
+AlphaFold Server, standing up a local AlphaFold 3, or moving to another
+predictor — which in turn gates any expansion of the benchmark, since all 100
+current models came from the Server.
+
+**Who needs to answer.** Supervisor, with whatever institutional guidance
+applies to licence terms. Not a technical question.
+
+**Current state.** Unresolved. 20 complexes x 5 models have already been
+predicted and analysed; see the
+[interface track](tracks/interface-kd.qmd). Those results exist but cannot be
+published. Server job IDs are absent from the downloads, so the predictions
+cannot be traced to individual submissions.
+
+## Role of ESM2 embeddings {#esm2-role}
+
+**Question.** Are ESM2 embeddings a descriptive layer reported alongside the
+computed physicochemical properties, or input features for a trained model
+that predicts expression?
+
+**Blocked by this.** The embedding tier of the physicochemical pipeline. The
+code is structured so the tier drops in as an additional stage, but its
+*purpose* determines everything about what it must produce: a descriptive
+layer needs interpretable per-residue or per-sequence summaries, while model
+features need a fixed-dimension representation, a train/test protocol, and a
+labelled dataset large enough to fit on — which
+[does not currently exist](#labelled-data).
+
+**Who needs to answer.** Supervisor.
+
+**Current state.** Unresolved; the tier is not implemented and no stubs exist
+for it.
+
+## Labelled expression data for training {#labelled-data}
+
+**Question.** Should an expression or solubility model be trained on a public
+*E. coli* dataset and validated against the in-house binders, or not trained
+at all until more in-house data exists?
+
+**Blocked by this.** Any predictive use of the physicochemical track. The
+track is currently descriptive by construction and states so on every page.
+
+**Who needs to answer.** Supervisor, together with whoever can say how many
+more binders the wet lab will produce and on what timescale.
+
+**Current state.** Unresolved. The in-house set has
+```{python}
+#| echo: false
+#| output: asis
+import pandas as pd
+binders = pd.read_csv(lr.ROOT / "data" / "opmd_binders_clean.csv", dtype=str,
+                      keep_default_na=False)
+n = len(binders)
+non = int((binders.expressed_binary == "0").sum())
+insol = int(((binders.soluble_binary == "0")
+             & (binders.expressed_binary == "1")).sum())
+print(f"**{n} binders with {non} non-expressers and {insol} insoluble "
+      f"cases**, which cannot support training on embeddings or on any other "
+      f"high-dimensional representation. Transfer from a public dataset "
+      f"introduces a domain shift — public solubility sets are dominated by "
+      f"natural proteins, while these are de-novo designs and nanobody "
+      f"formats — that would itself need validating on the very data that is "
+      f"too small to validate anything.")
+```
+
+## PDBBind recuration {#pdbbind-recuration}
+
+**Question.** How should the benchmark set be tightened before it is expanded?
+
+**Blocked by this.** Expanding the benchmark, and therefore any chance of the
+interface-parameter hypothesis being testable at a useful sample size. Also
+the modelling stage, which should not run on the current set.
+
+**Who needs to answer.** Decidable in house, but needs agreement on the
+inclusion criteria before any re-selection is run.
+
+**Current state.** Unresolved. The current set spans
+
+```{python}
+#| echo: false
+#| output: asis
+s = lr.params("2026-10-30T0000Z_interface-kd_complex-selection")
+SEL = "2026-10-30T0000Z_interface-kd_complex-selection"
+span = abs(lr.num(SEL, "log10_kd_max") - lr.num(SEL, "log10_kd_min"))
+kd_min, kd_max = lr.num(SEL, "kd_m_min"), lr.num(SEL, "kd_m_max")
+c = lr.params("2026-11-04T0400Z_interface-kd_correlations")
+print(f"about **{span:.0f} orders of magnitude of Kd** "
+      f"({kd_min:.0e} M to {kd_max:.0e} M) across "
+      f"{s['n_complexes']} complexes with mixed assay provenance. At this "
+      f"sample size no feature reaches p < 0.05 "
+      f"({c['features_below_p05']} of {c['features_tested']} tested), so the "
+      f"experiment currently cannot distinguish a weak real signal from "
+      f"noise. Candidate criteria to agree: a narrower Kd window, a single "
+      f"assay type where possible, and consistent SEQRES/ATOM agreement.")
+```
+
+## LCN2_B1 expression conditions {#lcn2-conditions}
+
+**Question.** Which expression conditions were actually used for LCN2_B1?
+
+**Blocked by this.** Any comparison that treats LCN2_B1's conditions as known;
+and the reliability of the wet-lab record more broadly, since two source
+sheets disagreeing on one binder raises the question of how the other rows
+were reconciled.
+
+**Who needs to answer.** Wet lab, from lab notebooks rather than the summary
+sheets.
+
+**Current state.** Unresolved. The decision tree records BL21 with 0.5 mM
+IPTG; the marker tracker records Rosetta with 0.3 mM. Temperature (37 °C) and
+duration (4 h) agree. Both disputed fields carry the literal value `CONFLICT`
+and no value has been imputed. LCN2_B1 did express and was found in the
+supernatant, so the outcome is not in doubt — only the conditions that
+produced it.
+
+# Resolved decisions
+
+Append new entries at the top. Never remove one.
+
+## 2026-11-05 — Experimental metadata is carried as text, never coerced
+
+**Decided.** The physicochemical pipeline reads every experimental metadata
+column as a string and carries it through unchanged, applying no numeric
+parsing at all. Only `sequence_length` is parsed as a number, and only to
+check it against the real sequence length.
+
+**Why.** LCN2_B1 carries `CONFLICT` in two numeric-looking fields, and several
+binders record multi-valued conditions such as `0.3; 0.5; 1.0`. Coercing
+these would either crash, silently produce NaN, or — worst — quietly discard
+the information that a conflict exists. Carrying text through means the
+sentinel survives verbatim and cannot disturb any other row.
+
+## 2026-11-05 — Two construct forms per binder, tags stripped explicitly
+
+**Decided.** Each binder is reported twice, `as_given` and `tag_stripped`,
+with a `stripped_elements` column recording exactly what was removed. Internal
+GS-repeat linkers are never stripped; only linkers directly adjacent to a
+removed terminal tag.
+
+**Why.** Purification tags change every computed property, and the set mixes
+tagged and untagged constructs, so a single-row-per-binder table would be
+comparing unlike things. Stripping IL10NB1's His tag moves its pI from 6.63 to
+5.09, which is large enough to invert comparisons. IL10NB5 is a VH-linker-VH
+construct whose GGGGS repeats are structural, so a blanket GS-stripping rule
+would have silently truncated a domain linker.
+
+## 2026-11-05 — The physicochemical track stays descriptive
+
+**Decided.** The track computes properties and tabulates them. Nothing is
+fitted, trained, or correlated against the experimental outcome columns, and
+every page says so.
+
+**Why.** 10 binders with 2 non-expressers. Any correlation computed against
+outcomes would be noise with a p-value attached, and would be cited later as
+if it meant something. The descriptors are reported next to the outcomes so a
+human can look at both without a spurious statistic in between.
+
+## 2026-11-04 — Keep all 20 complexes, report with and without the wrong ones
+
+**Decided.** The four structurally wrong complexes (1zvh, 3qhy, 5szj, 5bnq)
+remain in the benchmark, and correlations are reported on three subsets:
+n = 20, n = 17 excluding low-ipTM cases, and n = 16 also excluding 5bnq.
+
+**Why.** Dropping cases after seeing their accuracy is a selection decision
+that can manufacture a correlation. Reporting all three subsets makes the
+effect of the choice visible: `dG_norm` strengthens from
+
+```{python}
+#| echo: false
+#| output: asis
+c = lr.params("2026-11-04T0400Z_interface-kd_correlations")
+print(f"rho {c['dg_norm_rho_n20']:+.2f} at n = 20 to "
+      f"{c['dg_norm_rho_n16']:+.2f} at n = 16, which is consistent both with "
+      f"structural error diluting a real signal and with noise at small n. "
+      f"Stating all three leaves the reader able to judge. "
+      f"({lr.run_link('2026-11-04T0400Z_interface-kd_correlations')})")
+```
+
+## 2026-11-04 — 5bnq is a genuine prediction failure, not a mapping artefact
+
+**Decided.** 5bnq's DockQ of 0.03 at ipTM 0.85 is accepted as a real,
+confidently wrong prediction.
+
+**Why.** fnat is 0 in all five models, and an independent alignment-based
+contact check reproduced the result, ruling out a chain-mapping error. The
+consequence is that model confidence cannot be used on its own as a quality
+filter, which matters for any future pipeline that selects models
+automatically.
+
+## 2026-10-30 — Chains are assumed to be A and B downstream
+
+**Decided.** Downstream tools select chains A and B, matching AlphaFold Server
+output, with a mapping file translating to native chain IDs for DockQ.
+
+**Why.** It matched the predictor's output and kept the wrappers simple. This
+is a standing fragility rather than a clean decision: it is recorded as a
+known issue, because running any stage on structures whose chains are not
+named A/B will silently analyse the wrong thing.
+
+# How runs relate to decisions
+
+```{python}
+#| echo: false
+runs = lr.load_runs()
+flagged = runs[(runs.status != "ok")]
+lines = ["Runs whose status reflects an unresolved problem rather than a "
+         "clean completion:\n"]
+if flagged.empty:
+    lines.append("_None._")
+for row in flagged.itertuples():
+    lines.append(f"- {lr.run_link(row.run_id)} — status **{row.status}** — "
+                 f"{row.description}")
+Markdown("\n".join(lines))
+```

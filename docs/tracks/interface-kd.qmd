@@ -1,0 +1,311 @@
+---
+title: "Interface parameters and Kd"
+subtitle: "Do interface descriptors from predicted structures estimate binding affinity better than PRODIGY?"
+---
+
+```{python}
+#| echo: false
+import sys, pathlib
+for candidate in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]:
+    if (candidate / "_helpers" / "load_runs.py").exists():
+        sys.path.insert(0, str(candidate / "_helpers"))
+        break
+from IPython.display import Markdown
+import pandas as pd
+import load_runs as lr
+
+P = "../"  # path from this page to the site root, for run links
+
+SELECTION = "2026-10-30T0000Z_interface-kd_complex-selection"
+BASELINE = "2026-10-30T0000Z_interface-kd_prodigy-crystal"
+AF3 = "2026-11-03T0000Z_interface-kd_af3-predictions"
+RELAX = "2026-11-04T0136Z_interface-kd_fastrelax"
+METRICS = "2026-11-04T0200Z_interface-kd_interface-metrics"
+QUALITY = "2026-11-04T0300Z_interface-kd_structure-quality"
+CORR = "2026-11-04T0400Z_interface-kd_correlations"
+```
+
+::: {.backfilled-note}
+**Every result on this page is backfilled.** The numbers were transcribed from
+`bench20/RUNLOG.md` and the output CSVs of a run that completed before this
+site existed, not produced by executing code from this site. The output files
+are real and are served from the run directories; the surrounding analysis was
+not re-executed. Each run records `code_version: null`, because the commit
+that produced it is not identified.
+:::
+
+## The question
+
+PDBBind gives crystal structures with measured Kd. PRODIGY predicts affinity
+from a structure and is the baseline to beat. The hypothesis was that a richer
+set of interface descriptors — buried area, hydrogen bonds, shape
+complementarity, Rosetta interface energies, PLIP interaction counts — would
+predict Kd better, and that AlphaFold models could stand in for crystal
+structures so the method would work on complexes with no solved structure.
+
+That is two claims: that predicted structures are good enough, and that
+interface descriptors beat PRODIGY. The first largely holds. The second does
+not, at this sample size.
+
+## The benchmark set
+
+```{python}
+#| echo: false
+s = lr.params(SELECTION)
+sel = lr.read_output(SELECTION, "selection.tsv")
+Markdown(
+    f"{s['n_complexes']} two-chain X-ray complexes, each chain over "
+    f"{s['min_chain_length_aa']} residues, with an exact Kd "
+    f"{lr.cite(SELECTION, P)}. Selection seed `{s['selection_seed']}`; no "
+    f"pair exceeded the {s['homology_cutoff_identity']:.0%} identity / "
+    f"{s['homology_cutoff_coverage']:.0%} coverage homology cutoff.\n\n"
+    f"Kd spans **{lr.num(SELECTION, 'kd_m_min'):.0e} M to "
+    f"{lr.num(SELECTION, 'kd_m_max'):.0e} M** — about "
+    f"{abs(lr.num(SELECTION, 'log10_kd_max') - lr.num(SELECTION, 'log10_kd_min')):.0f} orders of magnitude, "
+    f"from 1 fM to 790 µM (n = {len(sel)})."
+)
+```
+
+::: {.caveat}
+That 12-order span is assembled from different publications using different
+assay types. A rank correlation across it is measuring agreement between
+heterogeneous experiments as much as anything structural. Recurating the set
+is an [open question](../decisions.qmd#pdbbind-recuration).
+:::
+
+## Predicted structures: good enough, with four exceptions
+
+```{python}
+#| echo: false
+a = lr.params(AF3)
+q = lr.params(QUALITY)
+dockq = lr.read_output(QUALITY, "bench20_dockq.csv")
+conf = lr.read_output(QUALITY, "af3_confidence.tsv")
+orig = dockq[dockq.kind == "original"]
+rel = dockq[dockq.kind == "relaxed"]
+Markdown(
+    f"{a['n_complexes']} complexes x {a['models_per_complex']} models = "
+    f"{a['total_models']} predictions {lr.cite(AF3, P)}, ipTM "
+    f"{a['iptm_min']} to {a['iptm_max']} over {len(conf)} models.\n\n"
+    f"Mean DockQ against the crystal structures is "
+    f"**{orig.DockQ.mean():.3f}** before relaxation and "
+    f"**{rel.DockQ.mean():.3f}** after, over {len(orig)} and {len(rel)} "
+    f"models {lr.cite(QUALITY, P)} — a mean change of "
+    f"{rel.DockQ.mean() - orig.DockQ.mean():+.3f}. "
+    f"{q['complexes_medium_or_high']} of {q['n_complexes']} complexes reach "
+    f"medium or high CAPRI accuracy."
+)
+```
+
+```{python}
+#| echo: false
+per_complex = (
+    dockq.pivot_table(index="complex", columns="kind", values="DockQ",
+                      aggfunc="mean")
+    .join(conf.groupby("complex_id").iptm.mean().rename("mean_iptm"))
+    .sort_values("original")
+)
+per_complex["change"] = per_complex["relaxed"] - per_complex["original"]
+per_complex.round(3)
+```
+
+Four complexes are wrong, and they are wrong in two different ways.
+
+```{python}
+#| echo: false
+wrong = lr.as_list(QUALITY, "incorrect_complexes")
+rows = per_complex.loc[[c for c in wrong if c in per_complex.index]]
+Markdown(
+    "Three — 1zvh, 3qhy, 5szj — are *honestly* wrong: low ipTM, low DockQ. "
+    "The model knew it was guessing.\n\n"
+    f"**5bnq is the problem case.** Mean ipTM "
+    f"{rows.loc['5bnq', 'mean_iptm']:.2f} but DockQ "
+    f"{rows.loc['5bnq', 'original']:.2f}, with fnat 0 in all five models. "
+    "Confirmed by an independent alignment-based contact check, so it is not "
+    "a chain-mapping artefact: it is a confidently wrong prediction. "
+    "Confidence cannot be used as a filter on its own."
+)
+```
+
+```{python}
+#| echo: false
+rows.round(3)
+```
+
+```{python}
+#| echo: false
+Markdown(
+    f"ipTM and realised DockQ correlate at "
+    f"{lr.fmt_rho(q['iptm_vs_dockq_spearman_rho'], q['n_complexes'])} "
+    f"{lr.cite(QUALITY, P)} — useful, far from sufficient. "
+    f"(That coefficient is transcribed from the report, not recomputed here.)"
+)
+```
+
+Relaxation slightly degrades agreement with crystal on average and badly in
+one case:
+
+```{python}
+#| echo: false
+Markdown(
+    f"{q['relaxation_worst_case_complex']} falls from DockQ "
+    f"{q['relaxation_worst_case_dockq_before']} to "
+    f"{q['relaxation_worst_case_dockq_after']} "
+    f"{lr.cite(RELAX, P)}. FastRelax completed "
+    f"{lr.param(RELAX, 'models_completed')}/"
+    f"{lr.param(RELAX, 'models_attempted')} models with no failures; "
+    f"{q['relaxation_worst_case_complex']} "
+    f"({lr.param(RELAX, 'rate_limiting_residues')} residues) was "
+    f"rate-limiting at about "
+    f"{lr.param(RELAX, 'rate_limiting_minutes_per_model')} minutes per model."
+)
+```
+
+A further caveat on comparing predictions to crystal at all:
+
+```{python}
+#| echo: false
+Markdown(
+    f"**{a['chains_with_extra_residues']} of {a['chains_total']} submitted "
+    f"chains contain residues absent from the crystal structures**, up to "
+    f"{a['max_extra_residues']} extra residues in "
+    f"{a['max_extra_residues_complex']} {lr.cite(AF3, P)}. The predictions "
+    f"and the reference structures are not models of identical molecules, "
+    f"which puts a floor under the achievable DockQ for those cases."
+)
+```
+
+## Feature extraction
+
+```{python}
+#| echo: false
+m = lr.params(METRICS)
+Markdown(
+    f"All {m['models_analysed']} relaxed models went through Rosetta "
+    f"InterfaceAnalyzer, PLIP (inter-chain A–B contacts only), PRODIGY and "
+    f"DockQ, with {m['dockq_comparisons']} DockQ comparisons "
+    f"({m['dockq_note']}) and **{m['failures']} failures** "
+    f"{lr.cite(METRICS, P)}. Features were merged into one per-complex table "
+    f"of {m['features_tested'] if 'features_tested' in m else 11} descriptors."
+)
+```
+
+```{python}
+#| echo: false
+allparam = lr.read_output(METRICS, "bench20_allparam.csv")
+Markdown(f"Merged feature table, n = {len(allparam)} complexes:")
+allparam.round(3)
+```
+
+## Correlations against experimental Kd
+
+```{python}
+#| echo: false
+c = lr.params(CORR)
+n20 = lr.read_output(CORR, "bench20_correlations.csv")
+n17 = lr.read_output(CORR, "bench20_excl_lowiptm_correlations.csv")
+n16 = lr.read_output(CORR, "bench20_excl_incorrect_correlations.csv")
+Markdown(
+    f"Three subsets {lr.cite(CORR, P)}: all {len(sel)} complexes; "
+    f"{int(n17.n.iloc[0])} excluding the low-ipTM cases; and "
+    f"{int(n16.n.iloc[0])} also excluding the confidently wrong 5bnq. "
+    f"{len(n20)} features tested against experimental log₁₀ Kd by Spearman "
+    f"and Kendall, with **no multiple-testing correction**."
+)
+```
+
+```{python}
+#| echo: false
+merged = (
+    n20[["parameter", "spearman_rho", "spearman_pvalue"]]
+    .merge(n17[["parameter", "spearman_rho", "spearman_pvalue"]],
+           on="parameter", suffixes=("_n20", "_n17"))
+    .merge(n16[["parameter", "spearman_rho", "spearman_pvalue"]]
+           .rename(columns={"spearman_rho": "spearman_rho_n16",
+                            "spearman_pvalue": "spearman_pvalue_n16"}),
+           on="parameter")
+    .set_index("parameter")
+    .reindex(n20.set_index("parameter").spearman_rho.abs()
+             .sort_values(ascending=False).index)
+)
+merged.round(3)
+```
+
+```{python}
+#| echo: false
+hb20 = n20[n20.parameter == "HB"].iloc[0]
+hb16 = n16[n16.parameter == "HB"].iloc[0]
+dg20 = n20[n20.parameter == "dG_norm"].iloc[0]
+dg16 = n16[n16.parameter == "dG_norm"].iloc[0]
+sig20 = int((n20.spearman_pvalue < 0.05).sum())
+sig16 = int((n16.spearman_pvalue < 0.05).sum())
+Markdown(
+    f"**Interface hydrogen-bond count is the only feature passing "
+    f"|rho| ≥ {c['abs_rho_threshold']} in all three subsets**: "
+    f"{lr.fmt_rho(hb20.spearman_rho, int(hb20.n), hb20.spearman_pvalue)} "
+    f"rising to "
+    f"{lr.fmt_rho(hb16.spearman_rho, int(hb16.n), hb16.spearman_pvalue)}. "
+    f"The sign is negative, so more hydrogen bonds goes with lower log₁₀ Kd, "
+    f"i.e. tighter binding — the direction one would hope for.\n\n"
+    f"`dG_norm` is the runner-up and strengthens as wrong models are removed: "
+    f"{lr.fmt_rho(dg20.spearman_rho, int(dg20.n), dg20.spearman_pvalue)} to "
+    f"{lr.fmt_rho(dg16.spearman_rho, int(dg16.n), dg16.spearman_pvalue)}.\n\n"
+    f"**Features reaching p < 0.05 by Spearman: {sig20} of {len(n20)} at "
+    f"n = 20, {sig16} of {len(n16)} at n = 16.** None. Across "
+    f"{len(n20)} features at these sample sizes, nothing here would survive "
+    f"a correction for multiple comparisons, and the strengthening of "
+    f"`dG_norm` as cases are dropped is equally consistent with real signal "
+    f"recovered from structural error and with noise at n = 16."
+)
+```
+
+### Against the baseline
+
+```{python}
+#| echo: false
+pvr = lr.read_output(CORR, "bench20_prodigy_crystal_vs_relaxed.csv")
+Markdown(
+    f"| Predictor | Spearman rho vs experimental log₁₀ Kd | n |\n"
+    f"|---|---|---|\n"
+    f"| PRODIGY on crystal structures (baseline) | "
+    f"{c['prodigy_crystal_rho_n20']:+.3f}, not significant | {len(pvr)} |\n"
+    f"| PRODIGY on relaxed AF3 models | "
+    f"{c['prodigy_relaxed_rho_n20']:+.3f}, not significant | {len(pvr)} |\n"
+    f"| Best interface feature (H-bond count) | "
+    f"{hb20.spearman_rho:+.3f}, p = {hb20.spearman_pvalue:.2f}, "
+    f"not significant | {int(hb20.n)} |\n\n"
+    f"PRODIGY's own predictions agree between crystal and relaxed models at "
+    f"rho = {c['prodigy_crystal_vs_relaxed_rho']} (n = {len(pvr)}) "
+    f"{lr.cite(CORR, P)}, so swapping crystal structures for relaxed "
+    f"predictions does not much change what PRODIGY says — which supports "
+    f"the predicted-structures-are-usable claim while saying nothing good "
+    f"about accuracy against experiment."
+)
+```
+
+## Where this leaves the track
+
+The interface-descriptor hypothesis is **not supported** by this benchmark.
+The honest summary is that at n = 16–20, with a Kd range spanning 12 orders of
+magnitude and mixed assay provenance, this experiment cannot distinguish a
+weak real signal from noise. H-bond count is the only candidate worth
+carrying forward.
+
+Modelling (LASSO / Ridge / ElasticNet) and held-out validation are **not
+started**, and should not start on these features at this sample size —
+fitting a regularised model to 11 features and 16–20 points, selected after
+inspecting correlations, would produce a number with no evidential value.
+
+What would change the answer: a larger and better-curated benchmark with
+consistent assay provenance and a narrower Kd range. That is the
+[PDBBind recuration question](../decisions.qmd#pdbbind-recuration). Separately,
+the [AlphaFold Server terms](../decisions.qmd#alphafold-terms) block
+publication of anything here regardless of the result.
+
+## Runs behind this page
+
+```{python}
+#| echo: false
+runs = lr.load_runs()
+Markdown(lr.runs_table(runs[runs.track == "interface-kd"], prefix=P))
+```

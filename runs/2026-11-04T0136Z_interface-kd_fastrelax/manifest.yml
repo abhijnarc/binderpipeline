@@ -1,0 +1,33 @@
+run_id: 2026-11-04T0136Z_interface-kd_fastrelax
+timestamp_utc: '2026-11-04T01:36:00Z'
+track: interface-kd
+stage: relaxation
+description: Rosetta FastRelax on all 100 AlphaFold models to produce relaxed structures
+  for interface analysis.
+status: ok
+inputs:
+- path: bench20/selection.tsv
+  sha256: 6b11b343c401b7ea088fee632367909aa67c8a4a7fc6bb07b59ea6b121ab1b24
+  bytes: 2044
+outputs: []
+tool_versions:
+  rosetta_fastrelax: static.linuxgccrelease, rosetta.binary.ubuntu.release-408
+code_version: null
+parameters:
+  models_attempted: 100
+  models_completed: 100
+  failures: 0
+  parallelism:
+  - xargs -P 20
+  - 5 models sequential per complex
+  wall_clock: 2026-11-03 18:5x to 2026-11-04 01:36 UTC
+  rate_limiting_complex: 4bkx
+  rate_limiting_residues: 658
+  rate_limiting_minutes_per_model: 50
+  output_naming: Rosetta _0001.pdb renamed to _0002.pdb by relax_parallel.sh
+supersedes: null
+backfilled: true
+notes: BACKFILLED from bench20/RUNLOG.md Phase B. 100/100 completed with no stage
+  failures. The 197 MB of relaxed PDB and score files live in bench20/work/ and
+  are deliberately not copied into runs/. Relaxed structures are inputs to the interface-metrics
+  and structure-quality runs.

@@ -1,0 +1,63 @@
+Sequence-only physicochemical characterisation: provenance
+==========================================================
+
+Run date:            2026-11-05
+Input file:          /data1/wetlab/msmf/binderpipeline/data/opmd_binders_clean.csv
+Binders read:        10
+Rows written:        20 (two per accepted binder)
+Rejected sequences:  0
+
+Tools and versions
+------------------
+Python               3.14.7
+Biopython            1.88  (Bio.SeqUtils.ProtParam, Bio.SeqUtils.ProtParamData)
+peptides             0.5.0
+pandas               3.0.6
+
+Which tool computes what
+------------------------
+Biopython ProtParam:  molecular weight, isoelectric point, net
+                      charge, GRAVY, instability index,
+                      aromaticity, amino-acid composition,
+                      extinction coefficients
+peptides.py:          aliphatic index (ProtParam has no equivalent)
+This module:          Shannon entropy, longest hydrophobic run,
+                      sliding-window hydropathy, charged fraction,
+                      cysteine parity, tag stripping
+
+Parameters
+----------
+Net charge pH values         7, 8
+pKa table for pI and charge  Bio.SeqUtils.IsoelectricPoint (Bjellqvist/EMBOSS table)
+Hydrophobicity scale         Kyte-Doolittle (Bio.SeqUtils.ProtParamData.kd; ProtParam scale name 'KyteDoolitle')
+Sliding window size          9 residues
+Hydrophobic residue set      AVILMFWYC (longest-run definition)
+Charged residue set          DEKR (fraction_charged_DEKR)
+Aromatic residues counted    FWY
+Shannon entropy              base 2 (bits), over the composition of
+                             the 20 standard residues; order-free
+Float rounding               4 decimal places
+
+Tag-stripping rules
+-------------------
+N-terminal leaders stripped  MGSS, MGS, M (longest match wins)
+His tag                      a run of 6 or more H anchored at
+                             either terminus; internal runs are kept
+Adjacent GS linker           a run of >= 3 residues drawn only from
+                             G and S, removed only when directly
+                             adjacent to a tag that was stripped;
+                             internal GS linkers are structural and
+                             are never removed
+Minimum length kept          5 residues; stripping is abandoned
+                             and recorded if it would leave fewer
+
+Stages registered this run
+--------------------------
+  sequence (requires: sequence)
+
+A structural stage (SASA, secondary structure, structure-corrected
+solubility) and an ESM2 embedding stage are planned and are not
+part of this run. No network access is used at any point.
+
+This pipeline is descriptive. Nothing here is fitted, trained, or
+correlated against the experimental outcome columns.

@@ -1,0 +1,63 @@
+run_id: 2026-11-04T0400Z_interface-kd_correlations
+timestamp_utc: '2026-11-04T04:00:00Z'
+track: interface-kd
+stage: correlations
+description: 'Rank correlation of every interface feature against experimental log10
+  Kd, on three subsets: all 20 complexes, 17 excluding low-ipTM models, and 16 also
+  excluding the confidently wrong 5bnq.'
+status: partial
+inputs:
+- path: bench20/work/bench20_allparam.csv
+  sha256: 60a7eb67891b933f17cbaf24b5025ada1e976046f248b35a59cb591b351db703
+  bytes: 3009
+- path: expt_kd.csv
+  sha256: ef65780b844d6872ee3ff1902da1042a71bc57ffb15c2cefa707a1d639049344
+  bytes: 380
+outputs:
+- path: bench20_correlations.csv
+  description: Spearman and Kendall per feature, n=20
+- path: bench20_excl_lowiptm_correlations.csv
+  description: Same, n=17, low-ipTM excluded
+- path: bench20_excl_incorrect_correlations.csv
+  description: Same, n=16, also excluding 5bnq
+- path: bench20_prodigy_crystal_vs_relaxed.csv
+  description: PRODIGY logKd on crystal versus relaxed models
+tool_versions:
+  scipy: 1.17.1
+  pandas: 3.0.6
+  python: 3.11.18
+code_version: null
+parameters:
+  subsets:
+  - 20
+  - 17
+  - 16
+  abs_rho_threshold: 0.3
+  features_tested: 11
+  multiple_testing_correction: none
+  best_feature: HB
+  hb_rho_n20: -0.383
+  hb_p_n20: 0.096
+  hb_rho_n17: -0.454
+  hb_p_n17: 0.067
+  hb_rho_n16: -0.462
+  hb_p_n16: 0.072
+  dg_norm_rho_n20: 0.205
+  dg_norm_rho_n17: 0.316
+  dg_norm_rho_n16: 0.359
+  prodigy_relaxed_rho_n20: 0.162
+  prodigy_crystal_rho_n20: 0.0925
+  prodigy_crystal_vs_relaxed_rho: 0.7
+  features_below_p05: 0
+supersedes: null
+backfilled: true
+notes: BACKFILLED from bench20/RUNLOG.md Phase B and the three correlations CSVs.
+  status=partial because no feature reaches p<0.05 by Spearman and none would survive
+  multiple-testing correction across 11 features; the analysis ran to completion
+  but does not support a model. Interface H-bond count is the only feature passing
+  |rho|>=0.3 in all three subsets, and its sign is negative, meaning more H-bonds
+  associates with lower log10 Kd, i.e. tighter binding. dG_norm strengthens as wrong
+  models are removed (0.205 to 0.359), which is consistent with structural error
+  diluting a real signal but is equally consistent with noise at n=16. Relaxed-model
+  PRODIGY (rho 0.162, n=20) is no better than the crystal baseline (0.0925) in any
+  meaningful sense at this sample size.

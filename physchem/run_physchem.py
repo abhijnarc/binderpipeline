@@ -238,10 +238,12 @@ def main(argv: list[str] | None = None) -> int:
         "for protein binder sequences."
     )
     default_root = Path(__file__).resolve().parent
+    # Curated input datasets live in the repository-level data/ directory.
+    ROOT_DATA = default_root.parent / "data"
     parser.add_argument(
         "--input",
         type=Path,
-        default=default_root / "data" / "opmd_binders_clean.csv",
+        default=ROOT_DATA / "opmd_binders_clean.csv",
         help="input CSV, one row per binder (default: %(default)s)",
     )
     parser.add_argument(

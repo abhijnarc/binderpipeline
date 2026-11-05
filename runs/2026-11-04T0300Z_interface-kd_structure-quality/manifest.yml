@@ -1,0 +1,54 @@
+run_id: 2026-11-04T0300Z_interface-kd_structure-quality
+timestamp_utc: '2026-11-04T03:00:00Z'
+track: interface-kd
+stage: structure-quality
+description: Assessment of AlphaFold model accuracy against the crystal structures
+  by DockQ, before and after relaxation, and the relationship between ipTM confidence
+  and realised accuracy.
+status: partial
+inputs:
+- path: bench20/selection.tsv
+  sha256: 6b11b343c401b7ea088fee632367909aa67c8a4a7fc6bb07b59ea6b121ab1b24
+  bytes: 2044
+outputs:
+- path: bench20_dockq.csv
+  description: DockQ, iRMSD, LRMSD and fnat per model, 200 rows
+- path: af3_confidence.tsv
+  description: Per-model pTM and ipTM for comparison
+tool_versions:
+  dockq: 2.1.3
+  python: 3.11.18
+code_version: null
+parameters:
+  n_complexes: 20
+  models_per_complex: 5
+  dockq_mean_original: 0.6882
+  dockq_mean_relaxed: 0.6566
+  dockq_mean_change: -0.0316
+  complexes_medium_or_high: 16
+  complexes_incorrect: 4
+  incorrect_complexes:
+  - 1zvh
+  - 3qhy
+  - 5szj
+  - 5bnq
+  iptm_vs_dockq_spearman_rho: 0.55
+  relaxation_worst_case_complex: 4bkx
+  relaxation_worst_case_dockq_before: 0.92
+  relaxation_worst_case_dockq_after: 0.69
+supersedes: null
+backfilled: true
+notes: 'BACKFILLED from bench20/RUNLOG.md Phase B. status=partial because 4 of 20
+  complexes are structurally wrong and were nonetheless retained for the correlation
+  analysis (decision: keep all 20, report with and without). 1zvh, 3qhy and 5szj
+  are explained by low ipTM (0.15-0.27). 5bnq is the concerning case: ipTM 0.85
+  but DockQ 0.03 with fnat 0 in all five models, confirmed by an independent alignment-based
+  contact check, so it is not a chain-mapping artefact but a confidently wrong prediction.
+  Relaxation slightly degrades agreement on average (-0.03) and badly for 4bkx.
+  The ipTM-versus-DockQ rho of 0.55 is transcribed from the report and is not recomputed
+  from a file here.'
+external_artefacts:
+- path: bench20/work/bench20_dockq_comparison.png
+  sha256: d17dd4fc087eb10c7294aef3da227e410256fb1d23be8102b6f826fb3afe9bdf
+  bytes: 151466
+  description: Per-complex dumbbell plot, AF3 versus relaxed

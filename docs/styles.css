@@ -1,0 +1,19 @@
+/* Superseded results stay visible but visibly demoted. */
+.superseded { opacity: 0.6; }
+td s, td del { opacity: 0.6; }
+
+/* Run tables carry long ids and descriptions; keep them readable. */
+table { font-size: 0.9rem; }
+table code { white-space: nowrap; }
+
+/* Flags that must not be skimmed past. */
+.caveat {
+  border-left: 3px solid #d9534f;
+  padding: 0.4rem 0.9rem;
+  margin: 1rem 0;
+}
+.backfilled-note {
+  border-left: 3px solid #f0ad4e;
+  padding: 0.4rem 0.9rem;
+  margin: 1rem 0;
+}

@@ -1,0 +1,81 @@
+stripping abandoned: would leave 0 residues (< 5); keeping sequence as given
+Sequence-only physicochemical pipeline: smoke test
+peptides 0.5.0; Biopython in use for ProtParam
+
+1. Reference protein: bovine ubiquitin (UniProt P0CG53, 1-76)
+  [PASS] ubiquitin length: expected 76, got 76
+  [PASS] ubiquitin molecular weight (ProtParam 8564.84 Da): expected 8564.84 +/- 0.5, got 8564.735700000001
+  [PASS] ubiquitin pI (ProtParam 6.56): expected 6.56 +/- 0.2, got 6.56157283782959
+  [PASS] ubiquitin extinction reduced (ProtParam 1490): expected 1490, got 1490
+  [PASS] ubiquitin extinction oxidised (no Cys, so 1490): expected 1490, got 1490
+  [PASS] ubiquitin Trp count (known 0): expected 0, got 0
+  [PASS] ubiquitin Tyr count (known 1): expected 1, got 1
+  [PASS] ubiquitin Cys count (known 0): expected 0, got 0
+  [PASS] ubiquitin Cys parity: expected 'even', got 'even'
+  [PASS] ubiquitin net charge at its own pI ~ 0: expected 0.0 +/- 0.05, got 2.277059342148391e-05
+
+2. Edge cases
+  [PASS] pentaglycine length: expected 5, got 5
+  [PASS] pentaglycine molecular weight (303.29 Da): expected 303.29 +/- 0.1, got 303.2718
+  [PASS] pentaglycine entropy (one residue type, 0 bits): expected 0.0 +/- 1e-09, got 0.0
+  [PASS] pentaglycine window hydropathy (Gly = -0.4): expected -0.4 +/- 1e-09, got -0.4
+  [PASS] pentaglycine window start: expected 1, got 1
+  [PASS] zero-Cys count: expected 0, got 0
+  [PASS] zero-Cys parity reported even: expected 'even', got 'even'
+  [PASS] no-aromatics F count: expected 0, got 0
+  [PASS] no-aromatics W count: expected 0, got 0
+  [PASS] no-aromatics Y count: expected 0, got 0
+  [PASS] no-aromatics aromaticity: expected 0.0 +/- 1e-09, got 0.0
+  [PASS] no-aromatics extinction reduced is 0: expected 0, got 0
+  [PASS] no-aromatics extinction oxidised is 0: expected 0, got 0
+  [PASS] all-Ala GRAVY equals KD Ala value 1.8: expected 1.8 +/- 1e-09, got 1.8
+  [PASS] all-Ala entropy 0 bits: expected 0.0 +/- 1e-09, got 0.0
+  [PASS] all-Ala longest hydrophobic run equals length: expected 20, got 20
+  [PASS] all-Ala composition pct_A is 100: expected 100.0 +/- 1e-09, got 100.0
+  [PASS] all-Ala fraction charged is 0: expected 0.0 +/- 1e-09, got 0.0
+  [PASS] ubiquitin composition sums to 100%: expected 100.0 +/- 1e-06, got 100.0
+  [PASS] sequence with X rejected: expected True, got True
+  [PASS] X rejection names the character: expected True, got True
+         reason: non-standard character 'X' at position 5 (allowed: the 20 standard amino acids, ACDEFGHIKLMNPQRSTVWY)
+  [PASS] sequence with hyphen rejected: expected True, got True
+  [PASS] hyphen rejection names the character: expected True, got True
+         reason: non-standard character '-' at position 5 (allowed: the 20 standard amino acids, ACDEFGHIKLMNPQRSTVWY)
+  [PASS] length mismatch rejected: expected True, got True
+         reason: sequence_length 99 does not match actual length 8
+  [PASS] valid sequence passes validation: expected 'AEKLDEAK', got 'AEKLDEAK'
+
+3. Tag stripping
+  [PASS] N-term His tag removed: expected 'AEKLYWDEAKRLEEAFKRLEEAK', got 'AEKLYWDEAKRLEEAFKRLEEAK'
+  [PASS] N-term His tag recorded: expected 'nterm_his_tag=HHHHHH', got 'nterm_his_tag=HHHHHH'
+  [PASS] C-term His tag removed: expected 'AEKLYWDEAKRLEEAFKRLEEAK', got 'AEKLYWDEAKRLEEAFKRLEEAK'
+  [PASS] C-term His tag recorded: expected 'cterm_his_tag=HHHHHH', got 'cterm_his_tag=HHHHHH'
+  [PASS] MGS leader removed: expected 'AEKLYWDEAKRLEEAFKRLEEAK', got 'AEKLYWDEAKRLEEAFKRLEEAK'
+  [PASS] MGS leader recorded: expected 'nterm_leader=MGS', got 'nterm_leader=MGS'
+  [PASS] MGSS leader removed: expected 'AEKLYWDEAKRLEEAFKRLEEAK', got 'AEKLYWDEAKRLEEAFKRLEEAK'
+  [PASS] MGSS leader recorded: expected 'nterm_leader=MGSS', got 'nterm_leader=MGSS'
+  [PASS] initiator M removed: expected 'AEKLYWDEAKRLEEAFKRLEEAK', got 'AEKLYWDEAKRLEEAFKRLEEAK'
+  [PASS] initiator M recorded: expected 'nterm_leader=M', got 'nterm_leader=M'
+  [PASS] both termini stripped: expected 'AEKLYWDEAKRLEEAFKRLEEAK', got 'AEKLYWDEAKRLEEAFKRLEEAK'
+  [PASS] both removals recorded: expected 'nterm_leader=MGS;cterm_his_tag=HHHHHH', got 'nterm_leader=MGS;cterm_his_tag=HHHHHH'
+  [PASS] internal HH not treated as tag: expected 'AEKLHHDEAKRLHHEEAFK', got 'AEKLHHDEAKRLHHEEAFK'
+  [PASS] internal HH records no stripping: expected 'none', got 'none'
+  [PASS] internal HH marked unchanged: expected False, got False
+  [PASS] internal HHHHHH not stripped: expected 'AEKLDEHHHHHHAKRLEEAFK', got 'AEKLDEHHHHHHAKRLEEAFK'
+  [PASS] internal HHHHHH records no stripping: expected 'none', got 'none'
+  [PASS] 8xHis tag removed whole: expected 'AEKLYWDEAKRLEEAFKRLEEAK', got 'AEKLYWDEAKRLEEAFKRLEEAK'
+  [PASS] 8xHis tag recorded in full: expected 'cterm_his_tag=HHHHHHHH', got 'cterm_his_tag=HHHHHHHH'
+  [PASS] internal GGGGS linker survives (no tag present): expected 'QVQLVESGGGLVQPGGSLRLSCAASGGGGSGGGGSGGGGSGGGGSQVQLVESGGGLVQPGGSLRLSCAAS', got 'QVQLVESGGGLVQPGGSLRLSCAASGGGGSGGGGSGGGGSGGGGSQVQLVESGGGLVQPGGSLRLSCAAS'
+  [PASS] internal linker records no stripping: expected 'none', got 'none'
+  [PASS] tag removed from linkered construct: expected 'QVQLVESGGGLVQPGGSLRLSCAASGGGGSGGGGSGGGGSGGGGSQVQLVESGGGLVQPGGSLRLSCAAS', got 'QVQLVESGGGLVQPGGSLRLSCAASGGGGSGGGGSGGGGSGGGGSQVQLVESGGGLVQPGGSLRLSCAAS'
+  [PASS] internal linker still present after stripping: expected True, got True
+  [PASS] only the tag recorded: expected 'cterm_his_tag=HHHHHH', got 'cterm_his_tag=HHHHHH'
+  [PASS] GS linker adjacent to removed leader is stripped: expected 'AEKLYWDEAKRLEEAFKRLEEAK', got 'AEKLYWDEAKRLEEAFKRLEEAK'
+  [PASS] adjacent linker recorded separately: expected 'nterm_leader=MGS;nterm_adjacent_gs_linker=GGGGS', got 'nterm_leader=MGS;nterm_adjacent_gs_linker=GGGGS'
+  [PASS] short GG after M not treated as linker: expected 'GGPFDYFWEIMWVVAQ', got 'GGPFDYFWEIMWVVAQ'
+  [PASS] short GG records only the leader: expected 'nterm_leader=M', got 'nterm_leader=M'
+  [PASS] over-stripping abandoned: expected 'MGSHHHHHH', got 'MGSHHHHHH'
+  [PASS] abandonment marked unchanged: expected False, got False
+  [PASS] abandonment explained: expected True, got True
+
+66 checks run; 0 failed
+SMOKE TEST PASSED

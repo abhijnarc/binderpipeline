@@ -1,0 +1,49 @@
+project:
+  type: website
+  output-dir: _site
+  post-render:
+    # Quarto will not follow a symlink out of the project directory, so the
+    # run directories are copied into _site/ after rendering. The script also
+    # verifies that every runs/<id>/ link in the rendered HTML resolves.
+    - python3 _helpers/publish_runs.py
+
+execute:
+  # Essential: previously rendered pages are not re-executed, so an old
+  # result stays exactly as it was produced. docs/_freeze/ is committed;
+  # delete a page's freeze entry only to deliberately re-run it.
+  freeze: auto
+  echo: true
+  warning: false
+
+website:
+  title: "Binder pipeline"
+  description: "Running documentation for the interface-parameter/Kd and physicochemical characterisation tracks."
+  navbar:
+    left:
+      - href: index.qmd
+        text: Overview
+      - href: tracks/interface-kd.qmd
+        text: Interface / Kd
+      - href: tracks/physchem.qmd
+        text: Physicochemical
+      - href: runs.qmd
+        text: Runs
+      - href: data.qmd
+        text: Data
+      - href: decisions.qmd
+        text: Decisions
+  page-footer:
+    center: "Results are versioned as immutable run directories under `runs/`. Every number on this site is read from a run manifest or output file."
+
+format:
+  html:
+    theme:
+      light: flatly
+      dark: darkly
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+    date-modified: last-modified
+    df-print: kable
+    css: styles.css

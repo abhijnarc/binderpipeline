@@ -1,0 +1,45 @@
+run_id: 2026-11-03T0000Z_interface-kd_af3-predictions
+timestamp_utc: '2026-11-03T00:00:00Z'
+track: interface-kd
+stage: af3-prediction
+description: AlphaFold Server predictions for all 20 complexes, five models each,
+  downloaded and converted to PDB for downstream analysis.
+status: ok
+inputs:
+- path: bench20/selection.tsv
+  sha256: 6b11b343c401b7ea088fee632367909aa67c8a4a7fc6bb07b59ea6b121ab1b24
+  bytes: 2044
+outputs:
+- path: af3_confidence.tsv
+  description: Per-model pTM, ipTM and ranking score, 100 rows
+tool_versions:
+  alphafold_server: AlphaFold Server, web, version not reported in downloads
+code_version: null
+parameters:
+  n_complexes: 20
+  models_per_complex: 5
+  total_models: 100
+  seeds_per_job: 1
+  chain_order: A then B as submitted
+  top_ranked_model: model_0
+  iptm_min: 0.15
+  iptm_max: 0.94
+  chains_with_extra_residues: 31
+  chains_total: 40
+  max_extra_residues: 113
+  max_extra_residues_complex: 4bkx
+supersedes: null
+backfilled: true
+notes: BACKFILLED from bench20/RUNLOG.md Phase B (2026-11-03). Server job IDs are
+  absent from the downloads, so the server_job_id column is empty and the predictions
+  cannot be traced back to individual submissions. 31 of 40 submitted chains contain
+  residues absent from the crystal structures (SEQRES/ATOM length difference), up
+  to 113 extra residues in 4bkx, which affects interface comparisons against crystal.
+  3w8h's own PDB entry appeared among its AF3 template hits (single-chain templates).
+  The 709 MB of CIF/PDB model files live in alphafold3_server/predictions/ and are
+  deliberately not copied here.
+external_artefacts:
+- path: bench20/work/bench20_dockq.csv
+  sha256: b517bbc0b229725b28d83bc6ccf3fdc26f4c04bba029288c697c9b25169b631e
+  bytes: 17677
+  description: DockQ per model, also used by the structure-quality run

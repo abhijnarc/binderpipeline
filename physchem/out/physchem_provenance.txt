@@ -2,7 +2,7 @@ Sequence-only physicochemical characterisation: provenance
 ==========================================================
 
 Run date:            2026-11-05
-Input file:          /data1/wetlab/msmf/binderpipeline/physchem/data/opmd_binders_clean.csv
+Input file:          /data1/wetlab/msmf/binderpipeline/data/opmd_binders_clean.csv
 Binders read:        10
 Rows written:        20 (two per accepted binder)
 Rejected sequences:  0

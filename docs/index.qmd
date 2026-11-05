@@ -1,0 +1,138 @@
+---
+title: "Binder pipeline"
+subtitle: "Running documentation for two parallel research tracks"
+---
+
+```{python}
+#| echo: false
+import sys, pathlib
+for candidate in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]:
+    if (candidate / "_helpers" / "load_runs.py").exists():
+        sys.path.insert(0, str(candidate / "_helpers"))
+        break
+from IPython.display import Markdown
+import load_runs as lr
+
+runs = lr.load_runs()
+live = runs[~runs.is_superseded]
+```
+
+Two tracks share this repository and this site. They have a common motivation —
+deciding which protein binders are worth making — but no shared code path.
+
+**Interface parameters and Kd.** Whether interface descriptors computed from
+predicted structures estimate binding affinity better than PRODIGY does. Run
+end to end on 20 PDBBind complexes. The answer so far is no.
+
+**Physicochemical characterisation.** Sequence-only descriptors for in-house
+binder designs, as a decision aid for expression trials. Descriptive by
+construction: it computes properties and tabulates them, and is not a
+predictor of expression or solubility.
+
+Git versions the code. This site versions the **results**: every execution
+writes an immutable directory under `runs/`, and a corrected analysis becomes a
+new run naming the one it replaces. Nothing in `runs/` is edited or deleted.
+
+```{python}
+#| echo: false
+executed = int((~live.backfilled).sum())
+backfilled = int(live.backfilled.sum())
+Markdown(
+    f"**{len(live)} current runs** — {executed} executed by code in this "
+    f"repository, {backfilled} backfilled from earlier reports — plus "
+    f"{int(runs.is_superseded.sum())} superseded, retained. "
+    f"See [all runs](runs.qmd)."
+)
+```
+
+## Interface parameters and Kd
+
+```{python}
+#| echo: false
+Markdown(lr.status_table("interface-kd", [
+    ("selection", "Complex selection (20 X-ray, exact Kd)", "planned"),
+    ("crystal-prodigy-baseline", "Crystal PRODIGY baseline", "planned"),
+    ("af3-prediction", "AlphaFold predictions, 20 x 5 models", "planned"),
+    ("relaxation", "Rosetta FastRelax, 100 models", "planned"),
+    ("interface-metrics", "InterfaceAnalyzer / PLIP / PRODIGY / DockQ", "planned"),
+    ("structure-quality", "Model accuracy vs crystal (DockQ)", "planned"),
+    ("correlations", "Feature correlations vs experimental log Kd", "planned"),
+    ("modelling", "LASSO / Ridge / ElasticNet", "not started"),
+    ("validation", "Held-out validation set", "not started"),
+]))
+```
+
+```{python}
+#| echo: false
+c = lr.params("2026-11-04T0400Z_interface-kd_correlations")
+q = lr.params("2026-11-04T0300Z_interface-kd_structure-quality")
+Markdown(
+    f"Best feature so far is interface H-bond count, "
+    f"{lr.fmt_rho(c['hb_rho_n16'], 16, c['hb_p_n16'])}. "
+    f"None of the {c['features_tested']} features tested reaches p < 0.05 in "
+    f"any subset, and no multiple-testing correction was applied. "
+    f"{q['complexes_medium_or_high']} of {q['n_complexes']} predicted "
+    f"complexes are structurally medium or high accuracy. "
+    f"[Details](tracks/interface-kd.qmd)."
+)
+```
+
+## Physicochemical characterisation
+
+```{python}
+#| echo: false
+Markdown(lr.status_table("physchem", [
+    ("smoke-test", "Smoke test against published reference values", "planned"),
+    ("characterisation", "Sequence-only descriptors, 10 binders", "planned"),
+    ("structural-tier", "Structural tier (SASA, secondary structure, CamSol)", "not started"),
+    ("embedding-tier", "ESM2 embedding tier", "not started (see decisions)"),
+]))
+```
+
+```{python}
+#| echo: false
+run = lr.latest("physchem", "characterisation")
+p = lr.params(run)
+props = lr.read_output(run, "physchem_properties.tsv")
+Markdown(
+    f"{p['binders']} binders, {p['rows_emitted']} rows "
+    f"({props.construct_form.nunique()} construct forms each), "
+    f"{p['rejected']} rejected on validation, "
+    f"{p['smoke_test_checks_passed']} smoke-test checks passing. "
+    f"These are descriptors, not predictions. "
+    f"[Details](tracks/physchem.qmd)."
+)
+```
+
+## What is blocking progress
+
+```{python}
+#| echo: false
+Markdown(
+    "See [decisions](decisions.qmd) for the full list with owners. The four "
+    "that gate everything else:"
+)
+```
+
+1. **AlphaFold Server terms of use are unresolved.** This blocks publication of
+   any interface-track result and the choice between continuing with the
+   Server, standing up a local AF3, or switching predictor.
+2. **No feature predicts Kd at this sample size.** Interface H-bond count is
+   the only candidate and it does not reach significance at n = 16–20.
+   Expanding or recurating the benchmark comes before modelling.
+3. **The labelled expression set is too small to train on.** 10 binders with 2
+   non-expressers. Whether to train on a public *E. coli* solubility dataset
+   and validate in house is undecided.
+4. **ESM2 embeddings have no agreed role** — descriptive layer alongside the
+   computed properties, or input features for a trained model. Awaiting a
+   supervisor decision.
+
+## Conventions on this site
+
+- Numbers appear because they were read from a run manifest or output file,
+  never typed into a page.
+- Every statistic carries its sample size, and a coefficient that does not
+  reach significance says so in the same sentence.
+- Results transcribed from earlier reports are marked **backfilled** and are
+  not reproducible from this site; results marked executed are.
+- Superseded runs stay visible, struck through, linked to their replacement.

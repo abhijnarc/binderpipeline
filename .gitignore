@@ -52,4 +52,15 @@ rosetta*/
 
 # Physchem tier-1 track: small, reviewable inputs and outputs are tracked
 # (overrides the blanket *.csv rule above)
-!/physchem/data/*.csv
+!/data/*.csv
+
+# Immutable run directories: the result history. Text-sized only; large
+# artefacts are recorded by path and hash, never stored here. Exempted from
+# the blanket *.csv rule so run outputs are not silently dropped.
+!/runs/**/*.csv
+
+# Quarto: the rendered site is disposable, the freeze cache is not. Keeping
+# docs/_freeze/ is what stops previously rendered pages re-executing and
+# changing old results.
+/docs/_site/
+/docs/.quarto/

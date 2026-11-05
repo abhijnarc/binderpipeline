@@ -1,0 +1,21 @@
+id	chain1	chain2	len1	len2	resolution	year	Kd	Kd_M	log10_Kd	comment
+1avx	A	B	223	177	1.9	1998	Kd=60fM	6e-14	-13.22184875	1avx.pdf (A|B) Soybean trypsin inhibitor (Kunitz), 6.00 x 10-14M
+1jiw	P	I	470	105	1.74	2001	Kd=4pM	4e-12	-11.39794001	1jiw.pdf (P|I) APR-alkaline protease inhibitor complex, Kd=4pM
+1r0r	E	I	274	51	1.1	2003	Kd=29.4pM	2.94e-11	-10.53165267	1r0r.pdf (E|I) Protein Inhibitor OMTKY3, Ka=3.4x10^10 M-1, Kd=2.94x10-11M
+1sq0	A	B	198	265	2.6	2004	Kd=30nM	3e-08	-7.52287875	1sq0.pdf (A|B) wt Von Willebrand Factor A1 domain and Glycoprotein Ib alpha, Kd=30nM
+1zvh	L	A	129	124	1.5	2006	Kd=70nM	7e-08	-7.15490196	1zv5.pdf (L|A) VHH domain D2-L24 in complex with hen egg white lysozyme, Kd=70nM
+2xgy	A	B	137	165	1.8	2010	Kd=30uM	3e-05	-4.52287875	2xgy.pdf (A|B) ligand is PEPTIDYL-PROLYL CIS-TRANS ISOMERASE A, CYCLOPHILIN A
+3f1p	A	B	114	111	1.17	2009	Kd=120uM	0.00012	-3.92081875	3f1n.pdf (A|B) human HIF2alpha-ARNT PAS-B heterodimer
+3kw5	A	B	223	75	2.83	2010	Kd=385nM	3.85e-07	-6.41453927	3ifw.pdf (A|B) ligand is ubiquitin vinylmethylester
+3qhy	A	B	258	271	2.06	2011	Kd=1.1pM	1.1e-12	-11.95860731	3qhy.pdf (A|B) Stopped-flow Tryptophan Fluorescence Spectrometric Measurements
+3u43	A	B	92	132	1.72	2012	Kd=1fM	1e-15	-15.00000000	3u43.pdf (A|B)
+3uzv	A	B	100	243	2.1	2012	Kd=0.43nM	4.3e-10	-9.36653154	3uyp.pdf (A|B)
+3w8h	A	B	197	66	2.43	2013	Kd=0.164uM	1.64e-07	-6.78515615	3w8h.pdf (A|B)
+4bkx	A	B	169	369	3.0	2013	Kd=5uM	5e-06	-5.30103000	4bkx.pdf (A|B) HDAC1 activity was measured with the HDAC Assay Kit (Millipore)
+4eig	A	B	159	117	2.5	2013	Kd=1nM	1e-09	-9.00000000	4eig.pdf (A|B)
+4h5s	A	B	96	100	1.7	2013	Kd=12.5uM	1.25e-05	-4.90308999	4h5s.pdf (A|B)
+4yvq	A	C	89	119	2.4	2015	Kd=2.03uM	2.03e-06	-5.69250396	4yvq.pdf (A|C)
+5bnq	A	R	156	166	2.8	2015	Kd=0.156nM	1.56e-10	-9.80687540	5bnq.pdf (A|R)
+5szj	A	B	175	153	2.66	2016	Kd=790uM	0.00079	-3.10237291	5lpn.pdf (A|B)
+5tvq	A	B	253	75	2.35	2017	Kd=0.88uM	8.8e-07	-6.05551733	5tvp.pdf (A|B)
+6i2m	A	B	196	358	2.3	2019	Kd=5.31nM	5.31e-09	-8.27490548	6i2m.pdf (A|B)
