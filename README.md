@@ -45,41 +45,47 @@ Green means the relevant script and environment are present; it does not mean th
 
 ## Separate physicochemical-properties track
 
-This track is not started. The property names and suggested tools below come from [`scripts/physiochemical.tsv`](scripts/physiochemical.tsv), which contains 19 parameter rows. The original request said 18; the supplied file lists 19.
+The sequence-only (Tier 1) properties are implemented and have been run on the 10-binder
+OPMD set; see [`physchem/`](physchem/) and its [column documentation and caveats](physchem/out/README.md).
+The structural (Tier 2) properties and a planned ESM2 embedding tier are not started.
+The property names and suggested tools below come from [`scripts/physiochemical.tsv`](scripts/physiochemical.tsv), which contains 19 parameter rows. The original request said 18; the supplied file lists 19.
 
 | Property | Tier (1 = sequence only, 2 = needs structure; 1 + 2 = method-dependent) | Tool | Status |
 |---|---:|---|---|
-| Sequence length and molecular weight | 1 | ProtParam; `peptides.py` | Not started |
-| Theoretical isoelectric point (pI) | 1 | ProtParam; `peptides.py` | Not started |
-| Net charge at relevant pH | 1 | `peptides.py` | Not started |
-| Amino-acid composition | 1 | ProtParam; `peptides.py` | Not started |
-| GRAVY | 1 | ProtParam; `peptides.py` | Not started |
-| Local hydrophobicity profile | 1 | `peptides.py` hydrophobicity profile | Not started |
+| Sequence length and molecular weight | 1 | ProtParam; `peptides.py` | Done (sequence tier) |
+| Theoretical isoelectric point (pI) | 1 | ProtParam; `peptides.py` | Done (sequence tier) |
+| Net charge at relevant pH | 1 | `peptides.py` | Done (sequence tier) |
+| Amino-acid composition | 1 | ProtParam; `peptides.py` | Done (sequence tier) |
+| GRAVY | 1 | ProtParam; `peptides.py` | Done (sequence tier) |
+| Local hydrophobicity profile | 1 | `peptides.py` hydrophobicity profile | Done (sequence tier) |
 | Surface hydrophobic patches | 2 | CamSol structure-corrected mode | Not started |
 | Predicted intrinsic solubility | 1 | CamSol Intrinsic | Not started |
 | Structure-corrected solubility | 2 | CamSol structure-corrected mode | Not started |
 | Aggregation propensity | 1 + 2 | AGGRESCAN3D for structures; CamSol; sequence-based aggregation predictors | Not started |
-| Instability index | 1 | ProtParam; `peptides.py` | Not started |
-| Aliphatic index | 1 | ProtParam; `peptides.py` | Not started |
-| Aromatic residue content (F, W, Y) | 1 | ProtParam; `peptides.py`; structure viewer for exposure context | Not started |
-| Cysteine number and arrangement | 1 + 2 | ProtParam; sequence inspection; structure prediction | Not started |
+| Instability index | 1 | ProtParam; `peptides.py` | Done (sequence tier) |
+| Aliphatic index | 1 | ProtParam; `peptides.py` | Done (sequence tier) |
+| Aromatic residue content (F, W, Y) | 1 | ProtParam; `peptides.py`; structure viewer for exposure context | Done (sequence tier) |
+| Cysteine number and arrangement | 1 + 2 | ProtParam; sequence inspection; structure prediction | Count and parity done (sequence tier); arrangement needs structure |
 | Secondary-structure percentages | 2 | `mkdssp` | Not started |
 | Solvent-accessible surface area (SASA) | 2 | `mkdssp` / DSSP; FreeSASA; predicted structure | Not started |
 | Structural confidence and disorder | 2 | AlphaFold confidence metrics | Not started |
-| Sequence complexity and low-complexity regions | 1 | `peptides.py` sequence statistics; SEG or equivalent | Not started |
-| Extinction coefficient at 280 nm | 1 | ProtParam | Not started |
+| Sequence complexity and low-complexity regions | 1 | `peptides.py` sequence statistics; SEG or equivalent | Done (sequence tier) |
+| Extinction coefficient at 280 nm | 1 | ProtParam | Done (sequence tier) |
 
 CamSol Intrinsic is sequence-based and a separate tool; check availability and access before use. The official [CamSol site](https://www-cohsoftware.ch.cam.ac.uk/) provides a web service after registration. Public information does not clearly confirm a standalone command-line release for CamSol Intrinsic. The combined cysteine and aggregation rows use tier `1 + 2` because their TSV tool suggestions include both sequence-only and structure-dependent analyses.
 
 ```mermaid
 flowchart LR
-  A["Tier 1<br/>sequence-only properties"] --> C["physchem_summary.csv"]
-  B["Tier 2<br/>structure-dependent properties"] --> C
+  A["Tier 1<br/>sequence-only properties<br/>physchem/run_physchem.py"] --> C["physchem/out/<br/>physchem_properties.tsv"]
+  B["Tier 2<br/>structure-dependent properties"] -.-> C
+  D["ESM2 embedding tier"] -.-> C
+  classDef ready fill:#d9ead3,stroke:#38761d,color:#111;
   classDef planned fill:#eeeeee,stroke:#777,color:#111;
-  class A,B,C planned;
+  class A,C ready;
+  class B,D planned;
 ```
 
-All nodes are grey because this track has not started.
+Green means run: the sequence-only tier is implemented and has been run over the 10 binders, with a passing smoke test against published ProtParam values for bovine ubiquitin. Grey and dashed means planned and not implemented; both remaining tiers register as additional stages and add their own columns to the same table. The computed columns are descriptors only — see the [caveats](physchem/out/README.md), which state that nothing is fitted or correlated against the experimental outcome columns.
 
 ## Environment summary
 

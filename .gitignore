@@ -49,3 +49,7 @@ rosetta*/
 /archive/**
 !/archive/**/
 !/archive/**/*.md
+
+# Physchem tier-1 track: small, reviewable inputs and outputs are tracked
+# (overrides the blanket *.csv rule above)
+!/physchem/data/*.csv
