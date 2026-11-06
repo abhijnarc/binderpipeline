@@ -1,0 +1,125 @@
+---
+title: "Physicochemical characterisation of 10 binder designs"
+subtitle: "Sequence-only descriptors — standalone report"
+author: "Binder pipeline"
+date: last-modified
+format:
+  html:
+    # One self-contained file, so this can be emailed or dropped in a shared
+    # folder and opened with no other files beside it. This is why the
+    # standalone report is a separate document and not a site page: the site
+    # is multi-page and must NOT use embed-resources.
+    embed-resources: true
+    theme: flatly
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    code-fold: true
+    df-print: kable
+    fig-width: 7
+    title-block-banner: true
+---
+
+<!--
+The analysis is _physchem-body.qmd under docs/tracks/, shared verbatim with the
+site page. Only the bindings below differ: this document travels without
+runs/ beside it, so a run is cited as a literal run_id rather than a link, and
+the provenance needed to find that run is appended at the end.
+
+Render:  quarto render share/physchem-report.qmd
+Output:  share/physchem-report.html  (a single file; send that)
+-->
+
+```{=html}
+<style>
+.caveat { border-left: 4px solid #b22; background: #fdf3f3; padding: 0.7em 1em;
+          margin: 1.2em 0; }
+.caveat p:last-child { margin-bottom: 0; }
+table { font-size: 0.88em; }
+.superseded { opacity: 0.55; }
+td s, td del { opacity: 0.55; }
+</style>
+```
+
+```{python}
+#| echo: false
+import sys, pathlib
+# This document sits outside the Quarto project, so find the helpers by
+# walking up to the repository root rather than to the project root.
+for candidate in [pathlib.Path.cwd(), *pathlib.Path.cwd().parents]:
+    if (candidate / "docs" / "_helpers" / "load_runs.py").exists():
+        sys.path.insert(0, str(candidate / "docs" / "_helpers"))
+        break
+from IPython.display import Markdown
+import pandas as pd
+import load_runs as lr
+
+CITE = lambda run_id: lr.cite(run_id, link=False)
+RUNS_TABLE = lambda frame: lr.runs_table(frame, link=False)
+ESM2_XREF = "pending decision about its role"
+
+SMOKE = lr.latest("physchem", "smoke-test")
+CHAR = lr.latest("physchem", "characterisation")
+props = lr.read_output(CHAR, "physchem_properties.tsv")
+p = lr.params(CHAR)
+stripped = props[props.construct_form == "tag_stripped"].set_index("binder_id")
+as_given = props[props.construct_form == "as_given"].set_index("binder_id")
+```
+
+```{python}
+#| echo: false
+Markdown(
+    f"*Generated {lr.today()} from run `{CHAR}`. Every number below is read "
+    f"from that run's output files or from its manifest; none is typed in. "
+    f"This is a single-file export of one page of the project's internal "
+    f"documentation site, where each result links to the immutable run "
+    f"directory that produced it. Run identifiers are retained here so any "
+    f"figure can be traced back.*"
+)
+```
+
+{{< include ../docs/tracks/_physchem-body.qmd >}}
+
+## Provenance
+
+```{python}
+#| echo: false
+rows = []
+for run_id in [SMOKE, CHAR]:
+    m = lr.manifest(run_id)
+    rows.append({
+        "run_id": run_id,
+        "timestamp (UTC)": m.get("timestamp_utc"),
+        "stage": m.get("stage"),
+        "status": m.get("status"),
+        "code version": m.get("code_version") or "not recorded",
+    })
+pd.DataFrame(rows).set_index("run_id")
+```
+
+```{python}
+#| echo: false
+rows = []
+for run_id in [SMOKE, CHAR]:
+    for entry in lr.manifest(run_id).get("inputs") or []:
+        rows.append({
+            "run_id": run_id,
+            "input": entry.get("path"),
+            "bytes": entry.get("bytes"),
+            "sha256": str(entry.get("sha256", ""))[:16] + "…",
+        })
+Markdown("Inputs, with hashes, so it is possible to tell whether a later copy "
+         "of a dataset is the one these numbers came from:")
+pd.DataFrame(rows).set_index("run_id") if rows else Markdown("_none recorded_")
+```
+
+```{python}
+#| echo: false
+versions = lr.tool_versions(CHAR)
+Markdown(
+    "Tool versions:\n\n"
+    + "\n".join(f"- `{name}` {version}" for name, version in
+                sorted(versions.items()))
+    if versions else Markdown("_no tool versions recorded_")
+)
+```
