@@ -1,0 +1,252 @@
+PHYSICOCHEMICAL CHARACTERISATION OF 10 BINDER DESIGNS
+Sequence-only descriptors: what the accompanying CSV contains, and
+what it does and does not support.
+
+Generated   2026-11-06
+Run         2026-11-05T0754Z_physchem_descriptors-10binders
+Data file   physchem_results.csv
+
+==============================================================================
+
+1. READ THIS FIRST
+------------------
+
+These are computed descriptors, not predictions. Nothing in this analysis is
+fitted, trained, or correlated against the experimental outcomes. The observed
+conditions and results travel in the same table so a person can look at both
+at once; no relationship between them has been calculated, and none is
+implied.
+
+The sample is 10 binders, of which 2 did not express, 3 went to the pellet and
+5 to the supernatant. That is far too small to support any conclusion about
+which properties matter for expression or solubility. No p-value or
+correlation coefficient against an outcome column has been computed, and none
+should be. Treat the group comparisons in section 6 as a check that the
+pipeline produces sane numbers, not as a result.
+
+Two of the descriptors deserve specific scepticism. The instability index and
+the aliphatic index are literature heuristics derived from contexts unlike
+recombinant expression in E. coli; they are not quality scores and a value
+either side of a conventional threshold means little here.
+
+2. WHAT WAS COMPUTED
+--------------------
+
+From amino-acid sequence alone: length, molecular weight, isoelectric point,
+net charge at pH 7.0 and 8.0, GRAVY hydropathy, instability and aliphatic
+indices, aromaticity with explicit F/W/Y counts, cysteine count and parity,
+the full 20-residue composition, charged fraction over DEKR, reduced and
+oxidised extinction coefficients at 280 nm, Shannon entropy of composition,
+the longest run of AVILMFWYC, and the maximum mean Kyte-Doolittle hydropathy
+over a 9-residue window with its position.
+
+The CSV carries 21 headline descriptors per row plus the experimental
+metadata. The complete table, including the per-residue composition, is the
+file physchem_properties.tsv in run directory
+2026-11-05T0754Z_physchem_descriptors-10binders.
+
+No structural information is used. A structural tier (solvent accessibility,
+secondary structure) and a protein-language-model embedding tier are planned
+but not implemented, so nothing here accounts for how the chain actually
+folds.
+
+3. VERIFICATION
+---------------
+
+The implementation was checked against independently published values before
+being run on these sequences: 66 checks, 0 failures (run
+2026-11-05T0749Z_physchem_smoketest). The reference protein was bovine-
+ubiquitin-P0CG53-1-76, for which the published values are molecular weight
+8564.84 Da (matched within 0.5 Da), isoelectric point 6.56 (matched within 0.2
+pH units, the tolerance being there because the pKa table used here differs
+slightly from the ExPASy web implementation), and extinction coefficient 1490
+M-1 cm-1 (matched exactly).
+
+Edge cases covered a 5-residue peptide, sequences with no cysteine and no
+aromatics (where the extinction coefficient must be exactly zero), an all-
+alanine sequence, and rejection of sequences containing non-standard
+characters.
+
+4. TWO ROWS PER BINDER: READ THE RIGHT ONE
+------------------------------------------
+
+Purification tags and expression leaders change every number in the table, and
+this set mixes tagged and untagged constructs. Each binder therefore appears
+twice, distinguished by the construct_form column:
+
+  as_given      the construct as supplied, i.e. the protein that was actually
+                expressed. Use this to interpret an observed experimental
+                outcome.
+
+  tag_stripped  the binder with terminal tags removed. Use this to compare
+                binders with each other, because otherwise the comparison is
+                partly between tags.
+
+The stripped_elements column records exactly what was removed from each
+sequence; nothing was modified without being recorded. Stripping removes a
+terminal run of at least 6 histidines at either end, a leading MGSS, MGS or M
+leader, and a GS-rich linker only where it directly abuts a removed tag.
+
+This is not a cosmetic difference. Removing IL10NB1's histidine tag moves its
+isoelectric point from 6.63 to 5.09, because six histidines are a real
+titratable group near neutral pH.
+
+IL10NB5 is deliberately left intact: it is a two-domain construct whose halves
+are joined by GGGGS repeats. Those linkers are structural, not purification
+tags, and are retained (stripped_elements = none).
+
+5. WHAT THE NUMBERS SHOW
+------------------------
+
+Ranges across the 10 binders, tag_stripped rows:
+
+  descriptor                        min        median           max
+  length                         84.000       100.500       268.000
+  molecular_weight            10262.374     12370.210     26494.453
+  isoelectric_point               4.536         5.087         9.282
+  net_charge_pH7                -13.179        -4.479         7.827
+  gravy                          -1.250        -0.767        -0.135
+  instability_index              28.110        45.425        84.756
+  aliphatic_index                61.194        79.394       101.071
+  aromaticity                     0.022         0.095         0.155
+  cys_count                       0.000         0.000         6.000
+  fraction_charged_DEKR           0.112         0.401         0.531
+  ext_coeff_280_reduced        1490.000     20455.000     39990.000
+  longest_hydrophobic_run         2.000         5.000         7.000
+  max_mean_hydropathy_w9          0.967         1.467         2.411
+
+Individual binders that stand out:
+
+  - MMP9B17 is the only basic construct (pI 9.28, net charge +7.8 at pH 7),
+    the only one with substantial cysteine (6 residues), and has the highest
+    local hydropathy of the set.
+
+  - IL6P233 has the lowest aromaticity of the set (0.0225) and an extinction
+    coefficient of only 1490 M-1 cm-1: one tyrosine and no tryptophan.
+    Practical consequence: absorbance at 280 nm will quantify this protein
+    poorly. Use a different assay.
+
+  - MMP9B9 has an instability index of 84.8, nearly double the median of 45.4.
+    See the caveat in section 1 before reading anything into that.
+
+  - IL10NB1 and IL10NB5, the two nanobody-format constructs, sit apart from
+    the designed helical binders on nearly every descriptor, with a higher
+    charged fraction and a GRAVY closest to zero. They differ in format,
+    length and origin, so they are not comparable to the rest as a group of
+    one kind.
+
+  - All 10 binders have an even cysteine count and 7 have none at all. GRAVY
+    is negative for every one, so all are net hydrophilic by that measure.
+
+6. DESCRIPTORS AGAINST OBSERVED OUTCOMES (SANITY CHECK)
+-------------------------------------------------------
+
+Ranges side by side, for inspection only. Sample sizes are given because they
+are the reason no test is reported.
+
+  descriptor                         pellet (n=3)       supernatant (n=5)     no expression (n=2)
+  fraction_charged_DEKR               0.11 - 0.33             0.31 - 0.53             0.45 - 0.49
+  gravy                             -0.36 - -0.13           -1.25 - -0.39           -0.89 - -0.86
+  instability_index                 37.79 - 46.52           44.33 - 84.76           28.11 - 38.33
+  longest_hydrophobic_run             7.00 - 7.00             3.00 - 6.00             2.00 - 3.00
+  length                           84.00 - 268.00          90.00 - 172.00          89.00 - 105.00
+
+The charged fraction and GRAVY ranges of the 3 pellet and 5 supernatant cases
+nearly touch but do not separate. Two of the three pellet cases are the
+nanobody-format IL10 constructs, so that split is confounded with construct
+class rather than reflecting these descriptors. The instability index runs
+opposite to the usual folklore, being lower in the insoluble group (37.8 to
+46.5) than in the soluble one (44.3 to 84.8). None of this is a signal; with
+these numbers it could not be.
+
+7. IL6P233 VERSUS IL6AD15
+-------------------------
+
+These two share their C-terminal 30 residues and differ across their
+N-terminal 60. IL6AD15 expressed and was mostly soluble; IL6P233 did not
+express. They are the closest thing in this set to a controlled comparison, so
+it is worth stating plainly how their computed properties differ.
+
+  descriptor                      IL6P233         IL6AD15
+  (outcome)                 no expression         soluble
+  length                           90.000          90.000
+  molecular_weight              10393.570       10599.816
+  isoelectric_point                 4.542           4.536
+  net_charge_pH7                  -12.437         -13.179
+  gravy                            -0.863          -1.018
+  instability_index                38.017          55.896
+  aliphatic_index                  98.667          93.222
+  aromaticity                       0.022           0.056
+  count_Y                           1.000           4.000
+  ext_coeff_280_reduced          1490.000        5960.000
+  longest_hydrophobic_run           2.000           3.000
+  fraction_charged_DEKR             0.489           0.522
+
+They are near-identical on isoelectric point, net charge and hydropathy. The
+differences that exist are small and mostly point the wrong way: the binder
+that failed to express has the LOWER instability index (38.0, below the
+conventional threshold of 40) and the HIGHER aliphatic index (98.7 against
+93.2).
+
+No computed descriptor here explains the difference in outcome. For a pipeline
+sanity check that is the useful answer: it says these descriptors are not
+covertly encoding the result, and it is consistent with the cause lying
+somewhere sequence-only descriptors cannot see -- local folding, codon or mRNA
+effects, toxicity, or simply that only one induction temperature was tried for
+IL6P233.
+
+8. KNOWN DEFECTS IN THE INPUT DATA
+----------------------------------
+
+LCN2_B1 carries the literal value CONFLICT in its host_strain and iptg_mM
+columns, because the source sheets disagree. This has been carried through as-
+is rather than guessed at. Any analysis touching those two fields must handle
+it; the descriptors themselves are computed from sequence and are unaffected.
+
+The data_quality_flag and source_sheets columns record provenance per row and
+are worth reading before using any outcome column.
+
+A literal NA in soluble_fraction or elisa_result means not applicable or not
+measured, and is distinct from an empty cell. These values are written out
+exactly as recorded, so a spreadsheet that silently converts NA to blank on
+import will lose that distinction.
+
+9. PROVENANCE
+-------------
+
+  characterisation run   2026-11-05T0754Z_physchem_descriptors-10binders
+  timestamp (UTC)        2026-11-05T07:54:22Z
+  status                 ok
+  code version           83d0ed1dc230cd9c82d30d5f60d6f14446164d3a
+  verification run       2026-11-05T0749Z_physchem_smoketest
+
+  inputs, with hashes:
+    data/opmd_binders_clean.csv
+      sha256 d08115c5353c948dfb3d62fb6ff919461e9a88f33edca616e524c32e9c04286d
+      bytes  3896
+    physchem/physchem_props.py
+      sha256 c3be62619f560172a3eab7c89bb6e7a00d1d2fc61414c7a1f6bc64e644d8e9a3
+      bytes  16959
+    physchem/run_physchem.py
+      sha256 94b49e21b7020f8ea1dda7aaf92f1ee98a2ec54fce48fbf82825da888ce10f54
+      bytes  11162
+
+  tool versions:
+    biopython 1.88
+    matplotlib 3.11.2
+    numpy 2.5.3
+    pandas 3.0.6
+    peptides 0.5.0
+    python 3.14.7
+    pyyaml 6.0.3
+    quarto 1.11.9
+    scipy 1.18.1
+
+Results are versioned as immutable run directories. The run named above is
+never edited; a corrected analysis becomes a new run that names the one it
+replaces. If the numbers in this note ever disagree with a newer report, the
+run identifiers say which is which.
+
+  physchem_results.csv sha256
+    6fdb601b619bf05c061ae3d6d7ba3af6c70d6448329f2befc73b86a9bc3dc942
+
